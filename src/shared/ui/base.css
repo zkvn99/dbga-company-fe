@@ -1,0 +1,44 @@
+/* 디자인 없음 — 화이트박스 테스트용 최소 스타일만. */
+body { font: 13px/1.5 system-ui, sans-serif; margin: 0; color: #222; }
+a { color: #0645ad; }
+h1, h2, h3 { margin: 0.6em 0 0.3em; }
+button { cursor: pointer; margin: 2px; }
+input, select, textarea { font: inherit; padding: 2px 4px; min-width: 220px; }
+input[type='checkbox'] { min-width: 0; }
+pre.json { background: #f6f6f6; padding: 6px; max-height: 320px; overflow: auto; margin: 4px 0; }
+.muted { color: #888; font-size: 0.9em; }
+.req { color: #c00; }
+.err { color: #c00; display: block; }
+.result { margin: 6px 0; padding: 6px; border-left: 4px solid; }
+.result.ok { border-color: #2a2; background: #f3fbf3; }
+.result.error { border-color: #c00; background: #fdf3f3; }
+.table { border-collapse: collapse; width: 100%; margin: 4px 0; }
+.table th, .table td { border: 1px solid #ddd; padding: 3px 6px; text-align: left; vertical-align: top; }
+.table th { background: #f3f3f3; }
+.table tr.row:hover { background: #f0f6ff; cursor: pointer; }
+.table.compact td { padding: 1px 4px; font-size: 12px; }
+.table tr.bad td { color: #c00; }
+.kv { border-collapse: collapse; margin: 4px 0; }
+.kv th, .kv td { border: 1px solid #ddd; padding: 2px 8px; text-align: left; }
+.kv th { background: #f6f6f6; font-weight: normal; color: #555; }
+.fields .field { display: grid; grid-template-columns: 240px 1fr; gap: 4px 8px; margin: 4px 0; align-items: start; }
+.fields .field > small { grid-column: 2; }
+.fields .field label code { margin-left: 4px; }
+.inline { margin-right: 10px; }
+.list-item { border: 1px dashed #bbb; padding: 4px; margin: 4px 0; }
+.api-form, .box { border: 1px solid #ddd; padding: 8px 12px; margin: 8px 0; }
+.cards button { padding: 4px 10px; }
+.cards button.on { background: #222; color: #fff; }
+.filters { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.filters .fields { display: flex; flex-wrap: wrap; gap: 0 16px; }
+.filters .field { grid-template-columns: auto auto; }
+.layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+.layout nav { background: #f7f7f7; border-right: 1px solid #ddd; padding: 8px; font-size: 12px; }
+.layout nav a { display: block; padding: 2px 0; text-decoration: none; }
+.layout nav a.router-link-active { font-weight: bold; }
+.layout nav .pending { color: #999; }
+.layout main { padding: 8px 16px 260px; }
+.topbar { display: flex; gap: 12px; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+.screen-info { background: #fffbe6; border: 1px solid #f0e2a0; padding: 4px 8px; margin: 8px 0; }
+.request-log { position: fixed; left: 0; right: 0; bottom: 0; max-height: 220px; overflow: auto; background: #fff; border-top: 2px solid #333; padding: 4px 8px; }
+.action { display: inline-block; vertical-align: top; margin-right: 8px; }

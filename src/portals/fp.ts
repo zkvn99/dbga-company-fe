@@ -1,0 +1,49 @@
+import { accountApi } from '@/api/account'
+import { fpAuthApi } from '@/api/auth'
+import { type PortalDef, pending } from '@/shared/portal/types'
+
+/** 설계사(FP) — 화면설계서 p.45~70. */
+export const fp: PortalDef = {
+  key: 'fp',
+  name: '설계사 (FP)',
+  auth: fpAuthApi,
+  me: () => accountApi.me('fp'),
+  changePassword: (body) => accountApi.changePassword('fp', body),
+  otpRedisKeyPrefix: 'dbga:company:login:fp:otp:',
+  home: 'FP-20',
+  login: 'FP-00',
+  setupScreen: 'FP-22',
+  screens: [
+    {
+      id: 'FP-00',
+      title: '로그인 · 휴대폰 인증 (FP-00-1)',
+      public: true,
+      page: () => import('@/shared/pages/OtpLoginPage.vue'),
+      apis: ['POST /api/auth/fp/login', 'POST /api/auth/fp/otp/send', 'POST /api/auth/fp/otp/verify'],
+      specPage: 45,
+    },
+    { id: 'FP-20', title: '기본설정 — 내 정보', setup: true, page: () => import('@/shared/pages/MePage.vue'), apis: ['GET /api/fp/me'], specPage: 67, note: '지금은 /me 원본만 — 연락처 · 알림 설정은 API 대기' },
+    { id: 'FP-22', title: '비밀번호 재설정', setup: true, page: () => import('@/shared/pages/ChangePasswordPage.vue'), apis: ['PUT /api/fp/me/password'], specPage: 69 },
+    pending('FP-01', '설계사 홈', 47),
+    pending('FP-02', 'DB 구매 — 상품 목록', 48),
+    pending('FP-03', 'DB 구매 — 상품 상세 · 구매 신청', 49),
+    pending('FP-04', '내 구매 · 공급 현황', 50),
+    pending('FP-05', '주문 상세 (모달)', 51),
+    pending('FP-07', 'DB 관리 — 목록', 52),
+    pending('FP-08', '증빙자료 목록 (팝업)', 53),
+    pending('FP-09', '고객 직접 등록 (모달)', 54),
+    pending('FP-10', 'DB 상세 — 기본정보', 55),
+    pending('FP-11', 'DB 수정 요청 확인 (모달)', 56),
+    pending('FP-12', 'AS 신청 (모달)', 57),
+    pending('FP-13', 'DB 상세 — 일정', 58),
+    pending('FP-14', '일정 — 주 · 월 보기', 59),
+    pending('FP-15', '일정 추가 (모달)', 61),
+    pending('FP-16', '일정 수정 (모달)', 62),
+    pending('FP-17', 'AS 목록', 63),
+    pending('FP-24', 'AS 신청 대상 DB 선택 (모달)', 64),
+    pending('FP-18', 'AS 상세 (모달)', 65),
+    pending('FP-19', '알림 (상단 패널)', 66),
+    pending('FP-21', '내 정보 수정', 68),
+    pending('FP-23', '기본설정 — 회사 정보', 70),
+  ],
+}
