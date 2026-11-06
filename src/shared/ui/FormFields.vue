@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reactive } from 'vue'
 import type { FieldError } from '../http/types'
 import { type FieldDef, type FormValues, newListItem } from './fields'
 
@@ -23,6 +24,23 @@ function arrayOf(key: string): string[] {
 
 function mapOf(key: string): Record<string, boolean> {
   return props.values[key] as Record<string, boolean>
+}
+
+/** 파일 올리기 상태(필드 경로 → 메시지). 실패 사유는 서버 응답 그대로. */
+const uploads = reactive<Record<string, string>>({})
+
+async function pickFile(field: FieldDef, event: Event): Promise<void> {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file || !field.upload) return
+  const path = props.prefix + field.key
+  uploads[path] = '올리는 중…'
+  try {
+    const result = await field.upload(file)
+    props.values[field.key] = result.fileId
+    uploads[path] = `올림: ${result.fileName ?? file.name}`
+  } catch (e) {
+    uploads[path] = `실패: ${e instanceof Error ? e.message : String(e)}`
+  }
 }
 
 function toggle(key: string, value: string, on: boolean): void {
@@ -69,6 +87,11 @@ function toggle(key: string, value: string, on: boolean): void {
         </div>
         <button type="button" @click="listOf(f.key).push(newListItem(f))">행 추가</button>
       </div>
+      <span v-else-if="f.type === 'file'">
+        <input type="file" @change="pickFile(f, $event)" />
+        <code>{{ values[f.key] || '(없음)' }}</code>
+        <small v-if="uploads[prefix + f.key]" class="muted">{{ uploads[prefix + f.key] }}</small>
+      </span>
       <input
         v-else
         v-model="values[f.key]"

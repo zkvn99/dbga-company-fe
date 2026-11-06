@@ -17,6 +17,7 @@ export type FieldType =
   | 'boolmap' // 옵션별 체크 → Record<string, boolean>
   | 'list' // 행 추가 · 삭제 → itemFields 객체 배열
   | 'readonly' // 표시만, 요청에 넣지 않음
+  | 'file' // 고르면 upload 를 불러 받은 fileId 를 값으로
 
 export interface Option {
   value: string
@@ -32,6 +33,8 @@ export interface FieldDef {
   placeholder?: string
   help?: string
   itemFields?: readonly FieldDef[]
+  /** type 'file' — src/api 의 올리기 함수(명시적 호출). 값 = 응답 fileId. */
+  upload?: (file: File) => Promise<{ fileId: string; fileName?: string }>
 }
 
 export type FormValues = Record<string, unknown>
