@@ -37,6 +37,20 @@ function portalRoute(portal: PortalDef): RouteRecordRaw {
   }
 }
 
+/** 설치 셋업이 끝났다고 확인한 Portal(다시 묻지 않음). 셋업이 필요하면 매번 확인한다. */
+const installed = new Set<string>()
+
+async function needsInstall(portal: PortalDef): Promise<boolean> {
+  if (!portal.installScreen || !portal.installRequired || installed.has(portal.key)) return false
+  try {
+    const required = await portal.installRequired()
+    if (!required) installed.add(portal.key)
+    return required
+  } catch {
+    return false // 확인 실패면 평소 흐름(로그인)으로
+  }
+}
+
 /** Portal 등록표로 라우터를 만든다. 화면 경로 = /<portal>/<화면 ID 소문자>[/<경로 변수>]. */
 export function createPortalRouter(appName: string, portals: readonly PortalDef[]): Router {
   const router = createRouter({
@@ -60,6 +74,7 @@ export function createPortalRouter(appName: string, portals: readonly PortalDef[
       },
       onForbidden: clearMe,
     })
+    if (screen?.id !== portal.installScreen && (await needsInstall(portal))) return screenPath(portal, portal.installScreen!)
     if (screen?.public || !portal.me || !portal.login) return true
     const me = await ensureMe(portal)
     if (!me) return { path: screenPath(portal, portal.login), query: { redirect: to.fullPath } }

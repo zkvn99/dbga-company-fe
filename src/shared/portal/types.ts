@@ -45,6 +45,12 @@ export interface PortalDef {
   home: string
   login?: string
   setupScreen?: string
+  /**
+   * 설치 셋업 화면(로그인 전). {@link installRequired}가 true면 로그인 화면을 포함한 모든 화면에서 여기로 보낸다 — 계정이 아직 없는 설치 직후.
+   * 회사 앱 OIT만(ADR-0028).
+   */
+  installScreen?: string
+  installRequired?: () => Promise<boolean>
   screens: readonly ScreenDef[]
 }
 
