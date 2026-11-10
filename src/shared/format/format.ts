@@ -17,6 +17,23 @@ export function formatValue(value: unknown): string {
   return String(value)
 }
 
+/**
+ * 처리자 · 생성자 · 수정자 칸(키 이름이 actor · createdBy · updatedBy · grantedBy · issuedBy 로 시작)은 비어 있으면 '시스템'.
+ * 서버는 시스템이 한 일을 NULL 로 둔다(created_by · updated_by NULL = 시스템 — docs/database.md). 처리자 유형(actorType)이
+ * 있고 SYSTEM 이 아니면(지워진 계정 등) 그냥 '-'.
+ */
+export const SYSTEM_ACTOR_LABEL = '시스템'
+const ACTOR_KEY = /^(actor|createdBy|updatedBy|grantedBy|issuedBy)/
+
+export function formatCell(key: string, value: unknown, row?: Record<string, unknown>): string {
+  const empty = value === null || value === undefined || value === ''
+  if (empty && ACTOR_KEY.test(key) && key !== 'actorType') {
+    const type = row?.actorType
+    if (type === undefined || type === null || type === 'SYSTEM') return SYSTEM_ACTOR_LABEL
+  }
+  return formatValue(value)
+}
+
 export function toJson(value: unknown): string {
   return JSON.stringify(value, null, 2) ?? 'undefined'
 }

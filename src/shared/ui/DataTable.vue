@@ -1,14 +1,14 @@
 <script setup lang="ts" generic="T extends object">
-import { formatValue } from '../format/format'
+import { formatCell } from '../format/format'
 import type { Column } from './table'
 
-/** 표. 셀은 column.value(row) → 없으면 row[key] 를 formatValue 로 표시. 셀 바꾸기는 #cell-<key> 슬롯, 행 버튼은 #actions. */
+/** 표. 셀은 column.value(row) → 없으면 row[key] 를 formatCell 로 표시(빈 처리자 칸 = 시스템). 셀 바꾸기는 #cell-<key> 슬롯, 행 버튼은 #actions. */
 defineProps<{ rows: readonly T[]; columns: readonly Column<T>[] }>()
 const emit = defineEmits<{ rowClick: [row: T] }>()
 
 function cell(row: T, column: Column<T>): string {
   const raw = column.value ? column.value(row) : (row as Record<string, unknown>)[column.key]
-  return formatValue(raw)
+  return formatCell(column.key, raw, row as Record<string, unknown>)
 }
 </script>
 

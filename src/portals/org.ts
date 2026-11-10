@@ -30,7 +30,7 @@ export const org: PortalDef = {
       page: () => import('@/pages/org/Org25AgentRegister.vue'),
       apis: ['POST /api/org/agents', 'GET /api/org/agents/login-id-check'],
       specPage: 100,
-      note: '기능 org:agent:register 는 위임으로만 — 위임 없는 계정은 403',
+      note: '기능 iam:account:create-agent(옛 org:agent:register) — 조직 관리자는 위임으로만, 위임 없는 계정은 403',
     },
     pending('ORG-01', '조직 대시보드', 74),
     pending('ORG-02', 'DB 구매 — 상품 목록', 75),
