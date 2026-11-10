@@ -172,12 +172,13 @@ export interface CatalogRole {
   features: { code: string; description: string }[]
   /** 세트에 넣을 수 있는 기능 = 그 역할 Portal 경로 기능 + 잠금(locked = 끌 수 없음). */
   assignable: { code: string; label: string; locked: boolean }[]
+  /** 이 역할에 위임할 수 있는 기능 = Portal 경로 기능 − 잠금 − 위임 금지(ADR-0032). */
+  delegable: { code: string; label: string }[]
   sets: { setId: string; name: string; isDefault: boolean; accountCount: number }[]
 }
 
 export interface PermissionCatalog {
   roles: CatalogRole[]
-  delegable: { code: string; label: string }[]
   apis: { method: string; path: string; feature: string; description: string }[]
 }
 

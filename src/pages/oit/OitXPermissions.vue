@@ -28,7 +28,7 @@ function mark(role: PermissionCatalog['roles'][number], code: string): string {
   return locked(role, code) ? '● 잠금' : '●'
 }
 
-const delegableColumns = cols<PermissionCatalog['delegable'][number]>(['code:기능 코드', 'label:이름'])
+const delegableColumns = cols<PermissionCatalog['roles'][number]['delegable'][number]>(['code:기능 코드', 'label:이름'])
 const apiColumns = cols<PermissionCatalog['apis'][number]>(['method:메서드', 'path:경로', 'feature:기능 코드', 'description:설명'])
 
 onMounted(() => void catalog.run())
@@ -57,8 +57,12 @@ onMounted(() => void catalog.run())
           </tr>
         </tbody>
       </table>
-      <h3>위임 가능 기능 (조직 관리자)</h3>
-      <DataTable :rows="data.delegable" :columns="delegableColumns" />
+      <h3>역할별 위임 가능 기능</h3>
+      <p class="muted">그 역할 Portal 기능 − 잠금 기능 − 위임 금지 기능(권한 세트 관리 · 계정 세트 지정 · 위임 편집 · 역할 변경 · 전산관리자 만들기). ADR-0032</p>
+      <template v-for="r in data.roles.filter((x) => x.delegable?.length)" :key="r.role">
+        <h4>{{ r.roleName }} <code class="muted">{{ r.role }}</code></h4>
+        <DataTable :rows="r.delegable" :columns="delegableColumns" />
+      </template>
       <h3>API ↔ 기능</h3>
       <DataTable :rows="data.apis" :columns="apiColumns" />
     </template>

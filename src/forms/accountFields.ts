@@ -31,19 +31,6 @@ export const GENDER: FieldDef = { key: 'gender', label: '성별', type: 'select'
 
 export const SCOPE_TYPE: FieldDef = { key: 'scopeType', label: '관리 범위', type: 'select', options: opts(['COMPANY', 'ORG']), help: 'COMPANY 회사 전체 · ORG 조직 선택' }
 
-/**
- * 위임 가능 기능 — GET /api/oit/permissions 의 delegable 을 못 읽을 때(iam:permission:read 없음) 쓰는 고정 목록.
- * 백엔드 iam DelegableFeature 와 같은 값.
- */
-export const DELEGABLE_FALLBACK: Option[] = [
-  { value: 'iam:account:create-agent', label: '설계사 등록' },
-  { value: 'iam:member:process', label: '회원 처리 (탈퇴)' },
-  { value: 'iam:account:suspend', label: '계정 정지 · 해제' },
-  { value: 'alloc:lead:reassign', label: '담당자 변경' },
-  { value: 'alloc:lead:reclaim', label: 'DB 회수' },
-  { value: 'audit:history:download', label: '이력 다운로드' },
-]
-
 /** 조직 목록 → 선택지(깊이만큼 들여쓰기, 범위 밖 · 사용 안 함 표시). 선택은 막지 않는다 — 서버 검증 확인용. */
 export function orgOptions(orgs: readonly OrgUnit[] | null | undefined): Option[] {
   return (orgs ?? []).map((o) => ({

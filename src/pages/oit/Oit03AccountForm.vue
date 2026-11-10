@@ -16,7 +16,7 @@ import {
 import { type CodeOption, codeApi } from '@/api/code'
 import { orgApi } from '@/api/org'
 import { type PermissionSet, permissionSetApi } from '@/api/permissionSet'
-import { ALIMTALK, DELEGABLE_FALLBACK, GENDER, HISTORY_COLUMNS, PHONES, SCOPE_TYPE, accountInitial, codeOptions, hasFeature, orgOptions } from '@/forms/accountFields'
+import { ALIMTALK, GENDER, HISTORY_COLUMNS, PHONES, SCOPE_TYPE, accountInitial, codeOptions, hasFeature, orgOptions } from '@/forms/accountFields'
 import { oit } from '@/portals/oit'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
@@ -49,7 +49,10 @@ const orgs = useAsync(orgApi.oitOrgs)
 const orgOpts = computed(() => orgOptions(orgs.data.value))
 const catalog = useAsync(accountManageApi.permissions)
 const roleName = (r: AccountRole) => catalog.data.value?.roles.find((x) => x.role === r)?.roleName ?? null
-const delegable = computed<Option[]>(() => catalog.data.value?.delegable.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })) ?? DELEGABLE_FALLBACK)
+/** 그 역할에 위임할 수 있는 기능(GET /api/oit/permissions roles[].delegable — 역할 Portal 기능 − 잠금 − 위임 금지, ADR-0032). */
+const delegableFor = (r: AccountRole | null | undefined): Option[] =>
+  catalog.data.value?.roles.find((x) => x.role === r)?.delegable.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })) ?? []
+const DELEGATION_HELP = '권한 세트에 더해 이 계정만 추가로 갖는 기능. 세트에 이미 있는 기능을 넣어도 됨(세트에서 빠져도 유지)'
 
 /** 조직별 직급 · 직책 선택지(조직 바뀔 때마다 다시 읽음). */
 function useOrgCodes() {
@@ -116,7 +119,7 @@ const createFields = computed<FieldDef[]>(() => {
   if (r !== 'AGENT') {
     fields.push({ ...SCOPE_TYPE, required: true }, { key: 'scopeOrgIds', label: '관리 조직', type: 'multicheck', options: orgOpts.value, help: 'scopeType=ORG 일 때' })
   }
-  if (r === 'ORG_MANAGER') fields.push({ key: 'delegations', label: '위임 기능', type: 'multicheck', options: delegable.value })
+  fields.push({ key: 'delegations', label: `위임 기능 (${r})`, type: 'multicheck', options: delegableFor(r), help: DELEGATION_HELP })
   fields.push({ key: 'permissionSetId', label: `권한 세트 (${r})`, type: 'select', options: createSets.options.value, help: SET_HELP })
   return fields
 })
@@ -233,7 +236,7 @@ const scopeFields = computed<FieldDef[]>(() => [
   { key: 'scopeOrgIds', label: '관리 조직', type: 'multicheck', options: orgOpts.value, help: 'scopeType=ORG 일 때' },
 ])
 const scopeInitial = computed(() => (d.value ? { role: d.value.role, scopeType: d.value.scope?.scopeType, scopeOrgIds: d.value.scope?.orgs.map((o) => o.orgId) ?? [] } : null))
-const delegationFields = computed<FieldDef[]>(() => [{ key: 'features', label: '위임 기능 (전체 교체)', type: 'multicheck', options: delegable.value }])
+const delegationFields = computed<FieldDef[]>(() => [{ key: 'features', label: `위임 기능 (${d.value?.role ?? '-'}, 전체 교체)`, type: 'multicheck', options: delegableFor(d.value?.role), help: `${DELEGATION_HELP} · 목록에 없는 옛 위임은 체크를 풀어 해제만 가능` }])
 const permissionSetFields = computed<FieldDef[]>(() => [{ key: 'setId', label: `권한 세트 (${d.value?.role ?? '-'})`, type: 'select', options: editSets.options.value, help: SET_HELP }])
 const permissionSetInitial = computed(() => (d.value ? { setId: d.value.permissionSet?.assigned ? d.value.permissionSet.setId : '' } : null))
 const delegationInitial = computed(() => (d.value ? { features: [...d.value.delegations] } : null))
@@ -351,8 +354,8 @@ onMounted(() => {
         </section>
 
         <ApiForm
-          v-if="can('iam:account:delegate') && (d.role === 'ORG_MANAGER' || showAll)"
-          title="위임 — PUT …/delegations (조직 관리자만)"
+          v-if="can('iam:account:delegate')"
+          title="위임 — PUT …/delegations (세 역할 모두)"
           :fields="delegationFields"
           :initial="delegationInitial"
           :submit="saveDelegations"

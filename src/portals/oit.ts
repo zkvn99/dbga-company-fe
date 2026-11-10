@@ -84,7 +84,7 @@ export const oit: PortalDef = {
         'GET /api/oit/permission-sets',
       ],
       specPage: 113,
-      note: '생성 등급 = 경로(만들기 기능 없는 역할은 숨김). 수정은 섹션마다 각자 저장. 이메일 · 생년월일은 새 값 입력 시만 변경, 추가 번호는 원문 재입력 필요(가린 값 거부). 위임 선택지 = /permissions delegable(권한 없으면 고정 목록). 권한 세트 = 고른 역할의 세트(?role=), 비우면 역할 기본 세트 따름 — 등록은 permissionSetId, 수정은 별도 저장(PUT …/permission-set). 역할을 바꾸면 지정 세트가 지워짐(ADR-0031)',
+      note: '생성 등급 = 경로(만들기 기능 없는 역할은 숨김). 수정은 섹션마다 각자 저장. 이메일 · 생년월일은 새 값 입력 시만 변경, 추가 번호는 원문 재입력 필요(가린 값 거부). 위임 = 세 역할 모두, 선택지 = /permissions roles[].delegable(고른 역할 기준, ADR-0032). 권한 세트 = 고른 역할의 세트(?role=), 비우면 역할 기본 세트 따름 — 등록은 permissionSetId, 수정은 별도 저장(PUT …/permission-set). 역할을 바꾸면 지정 세트가 지워짐(ADR-0031)',
     },
     {
       id: 'OIT-08',
