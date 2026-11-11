@@ -177,9 +177,29 @@ export interface CatalogRole {
   sets: { setId: string; name: string; isDefault: boolean; accountCount: number }[]
 }
 
+/** 기능 탭(OIT-21) 한 줄 — portals = API 경로로 정해지는 Portal, locked = 잠금 기능(이름도 바꿀 수 없음). */
+export interface FeatureSummary {
+  code: string
+  label: string
+  portals: string[]
+  locked: boolean
+  apiCount: number
+}
+
 export interface PermissionCatalog {
   roles: CatalogRole[]
-  apis: { method: string; path: string; feature: string; description: string }[]
+  features: FeatureSummary[]
+  apis: { method: string; path: string; feature: string; label: string; description: string | null }[]
+}
+
+export interface RenameFeatureRequest {
+  label: string
+}
+
+export interface FeatureRenamed {
+  featureCode: string
+  label: string
+  changed: boolean
 }
 
 const ACCOUNTS = '/api/oit/accounts'
@@ -212,4 +232,7 @@ export const accountManageApi = {
 
   // 권한 조회 (iam:permission:read)
   permissions: () => api.get<PermissionCatalog>('/api/oit/permissions'),
+  /** iam:permission:manage — 기능 표시 이름만(OIT-21). 잠금 409 · 없는 기능 404. */
+  renameFeature: (featureCode: string, body: RenameFeatureRequest) =>
+    api.put<FeatureRenamed>(`/api/oit/permissions/features/${encodeURIComponent(featureCode)}`, body),
 }

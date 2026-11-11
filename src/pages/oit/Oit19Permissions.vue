@@ -29,14 +29,17 @@ function mark(role: PermissionCatalog['roles'][number], code: string): string {
 }
 
 const delegableColumns = cols<PermissionCatalog['roles'][number]['delegable'][number]>(['code:기능 코드', 'label:이름'])
-const apiColumns = cols<PermissionCatalog['apis'][number]>(['method:메서드', 'path:경로', 'feature:기능 코드', 'description:설명'])
+const apiColumns = cols<PermissionCatalog['apis'][number]>(['method:메서드', 'path:경로', 'feature:기능 코드', 'label:기능 이름', 'description:설명'])
 
 onMounted(() => void catalog.run())
 </script>
 
 <template>
   <div>
-    <p><RouterLink :to="screenPath(oit, 'OIT-10')">권한 세트 · 역할 이름 관리 (OIT-10)</RouterLink></p>
+    <p>
+      <RouterLink :to="screenPath(oit, 'OIT-10')">권한 세트 · 역할 이름 관리 (OIT-10)</RouterLink> ·
+      <RouterLink :to="screenPath(oit, 'OIT-21')">기능 이름 (OIT-21)</RouterLink>
+    </p>
     <ResultBox :error="catalog.error.value" />
     <template v-if="data">
       <h3>역할별 기본 세트 기능</h3>

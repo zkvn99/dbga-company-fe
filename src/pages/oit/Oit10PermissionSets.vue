@@ -34,7 +34,7 @@ function reloadAll(): void {
 }
 
 // ── 역할 이름 ──────────────────────────────────────
-const roleNameFields: FieldDef[] = [{ key: 'name', label: '역할 표시 이름', required: true, help: '1–50자 · 역할 코드는 바뀌지 않음' }]
+const roleNameFields: FieldDef[] = [{ key: 'name', label: '역할 표시 이름', required: true, help: '1–20자 · 다른 역할과 같은 이름 불가 · 역할 코드는 바뀌지 않음' }]
 const renameRole = (role: AccountRole) => (body: { name: string }) => permissionSetApi.renameRole(role, body)
 
 // ── 세트 목록 ──────────────────────────────────────
