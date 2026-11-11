@@ -3,7 +3,7 @@ import { oitAuthApi } from '@/api/auth'
 import { setupApi } from '@/api/setup'
 import { type PortalDef, pending } from '@/shared/portal/types'
 
-/** 회사 전산관리자(OIT, 역할 ORG_SYSTEM_ADMIN — 화면설계서의 "조직 전산관리자") — 화면설계서 p.109~117. */
+/** 회사 전산관리자(OIT, 역할 ORG_SYSTEM_ADMIN — 화면설계서의 "조직 전산관리자") — 화면설계서 v2.5 p.110~125. 내 정보 = 공통 페이지(p.10, OIT-ME). */
 export const oit: PortalDef = {
   key: 'oit',
   name: '회사 전산관리자 (OIT)',
@@ -11,10 +11,10 @@ export const oit: PortalDef = {
   me: () => accountApi.me('oit'),
   changePassword: (body) => accountApi.changePassword('oit', body),
   otpRedisKeyPrefix: 'dbga:company:login:oit:otp:',
-  home: 'OIT-X-ME',
+  home: 'OIT-ME',
   login: 'OIT-00',
   setupScreen: 'OIT-15',
-  installScreen: 'OIT-X-INSTALL',
+  installScreen: 'OIT-18',
   installRequired: () => setupApi.status().then((s) => s.setupNeeded),
   screens: [
     {
@@ -23,15 +23,16 @@ export const oit: PortalDef = {
       public: true,
       page: () => import('@/shared/pages/OtpLoginPage.vue'),
       apis: ['POST /api/auth/oit/login', 'POST /api/auth/oit/otp/send', 'POST /api/auth/oit/otp/verify'],
-      specPage: 109,
+      specPage: 111,
     },
     {
-      id: 'OIT-X-INSTALL',
-      title: '설치 셋업 (설치 직후 첫 화면)',
+      id: 'OIT-18',
+      title: '설치 셋업 (로그인 전)',
       public: true,
-      page: () => import('@/pages/oit/OitXInstallSetup.vue'),
+      page: () => import('@/pages/oit/Oit18InstallSetup.vue'),
       apis: ['GET /api/setup/install', 'POST /api/setup/install'],
-      note: '화면설계서 밖 — ADR-0028. 회사가 없으면 로그인 대신 이 화면으로 자동 이동(installRequired). 센터 설치 코드로 등록 → 회사 · 첫 회사 전산관리자 생성',
+      specPage: 110,
+      note: 'ADR-0028. 회사가 없으면 로그인 대신 이 화면으로 자동 이동(installRequired). 센터 설치 코드로 등록 → 회사 · 첫 회사 전산관리자 생성',
     },
     {
       id: 'OIT-15',
@@ -39,10 +40,10 @@ export const oit: PortalDef = {
       setup: true,
       page: () => import('@/shared/pages/ChangePasswordPage.vue'),
       apis: ['PUT /api/oit/me/password'],
-      specPage: 111,
-      note: '지금은 비밀번호 변경 단계만 — 센터 등록 · 회사 생성은 로그인 전 설치 셋업(OIT-X-INSTALL), 회사 정보 · 조직 셋업(company.setup_status)은 API 대기',
+      specPage: 113,
+      note: '지금은 비밀번호 변경 단계만 — 센터 등록 · 회사 생성은 로그인 전 설치 셋업(OIT-18), 회사 정보 · 조직 셋업(company.setup_status)은 API 대기',
     },
-    { id: 'OIT-X-ME', title: '내 정보', setup: true, page: () => import('@/shared/pages/MePage.vue'), apis: ['GET /api/oit/me'] },
+    { id: 'OIT-ME', title: '내 정보', setup: true, page: () => import('@/shared/pages/MePage.vue'), apis: ['GET /api/oit/me'], specPage: 10 },
     {
       id: 'OIT-02',
       title: '계정 관리 — 계정 목록 (회원 처리 ORG-26 B안 · 이력 ORG-34 포함)',
@@ -57,7 +58,7 @@ export const oit: PortalDef = {
         'POST /api/oit/accounts/{id}/password-reset',
         'GET /api/oit/accounts/{id}/history',
       ],
-      specPage: 112,
+      specPage: 114,
       note: '버튼은 기본 모두 표시(403 확인) — 체크를 끄면 /me features 대로 미리보기. 회원 처리 A안(조직 귀속 후 탈퇴)은 1차 — 비활성. 권한 세트 열 · 필터 = ADR-0031(필터 선택지 · 역할 이름은 /permissions, 기본 세트를 고르면 미지정 계정 포함)',
     },
     {
@@ -83,7 +84,7 @@ export const oit: PortalDef = {
         'GET /api/oit/permissions',
         'GET /api/oit/permission-sets',
       ],
-      specPage: 113,
+      specPage: 115,
       note: '생성 등급 = 경로(만들기 기능 없는 역할은 숨김). 수정은 섹션마다 각자 저장. 이메일 · 생년월일은 새 값 입력 시만 변경, 추가 번호는 원문 재입력 필요(가린 값 거부). 위임 = 세 역할 모두, 선택지 = /permissions roles[].delegable(고른 역할 기준, ADR-0032). 권한 세트 = 고른 역할의 세트(?role=), 비우면 역할 기본 세트 따름 — 등록은 permissionSetId, 수정은 별도 저장(PUT …/permission-set). 역할을 바꾸면 지정 세트가 지워짐(ADR-0031)',
     },
     {
@@ -100,20 +101,22 @@ export const oit: PortalDef = {
         'GET /api/oit/regions',
         'GET /api/oit/orgs',
       ],
-      specPage: 114,
+      specPage: 116,
       note: '[하위 그룹 추가](OIT-09) · 사용 중 건수 · 업체 그룹은 1차/API 없음. 센터 사본 · 시스템 잠금 그룹은 조회만',
     },
     {
-      id: 'OIT-X-PERMISSION',
-      title: '권한 조회 (역할 × 기본 세트 기능 · API 표)',
-      page: () => import('@/pages/oit/OitXPermissions.vue'),
+      id: 'OIT-19',
+      title: '권한 관리 — 권한 조회 (첫 화면 · 위임 가능 기능 · API ↔ 기능 탭)',
+      page: () => import('@/pages/oit/Oit19Permissions.vue'),
       apis: ['GET /api/oit/permissions'],
-      note: '화면설계서 밖 — ADR-0030 · ADR-0031, 조회 전용. 표의 기능 = 역할 기본 세트(잠금 표시). 세트 편집은 OIT-X-PERMISSION-SET',
+      specPage: 117,
+      note: 'ADR-0030 · ADR-0031, 조회 전용. 표의 기능 = 역할 기본 세트(잠금 표시). [+ 역할 추가](OIT-20)는 API 대기. 세트 편집은 OIT-10',
     },
     {
-      id: 'OIT-X-PERMISSION-SET',
-      title: '권한 세트 · 역할 이름',
-      page: () => import('@/pages/oit/OitXPermissionSets.vue'),
+      id: 'OIT-10',
+      title: '권한 관리 — 역할 상세 · 권한 세트',
+      page: () => import('@/pages/oit/Oit10PermissionSets.vue'),
+      specPage: 119,
       apis: [
         'GET /api/oit/permissions',
         'GET /api/oit/permission-sets',
@@ -125,10 +128,12 @@ export const oit: PortalDef = {
         'DELETE /api/oit/permission-sets/{setId}',
         'PUT /api/oit/roles/{role}',
       ],
-      note: '화면설계서 OIT-10 · OIT-12(1차)의 최소운영 판 — ADR-0031. 역할마다 표시 이름 · 세트 목록 · 추가 · 수정 · 기본 지정 · 삭제 · 이력. 기능 선택지 = 역할 assignable(잠금은 체크 · 표시, 빼도 서버가 유지). 계정별 예외(OIT-12)는 없음 — 계정에 세트 지정은 OIT-03',
+      note: 'ADR-0031. 추가 역할 · 역할 삭제(v2.4)는 API 대기. 역할마다 표시 이름 · 세트 목록 · 추가 · 수정 · 기본 지정 · 삭제 · 이력. 기능 선택지 = 역할 assignable(잠금은 체크 · 표시, 빼도 서버가 유지). 계정별 예외(OIT-12)는 없음 — 계정에 세트 지정은 OIT-03',
     },
-    pending('OIT-13', '조직 설정 — 회사 정보 · 조직', 115),
-    pending('OIT-16', '공급업체 계약', 116),
-    pending('OIT-17', '계약 신청 · 동의 (모달)', 117),
+    pending('OIT-20', '역할 추가 (모달)', 118),
+    pending('OIT-21', '권한 관리 — 기능 (탭)', 120),
+    pending('OIT-13', '조직 설정 — 회사 정보 · 조직', 123),
+    pending('OIT-16', '공급업체 계약', 124),
+    pending('OIT-17', '계약 신청 · 동의 (모달)', 125),
   ],
 }

@@ -1,6 +1,6 @@
 import type { PortalDef } from './types'
 
-const SCREEN_ID = /^[A-Z]+-(\d{2}(-\d)?|X-[A-Z0-9-]+)$/
+const SCREEN_ID = /^[A-Z]+-(\d{2}(-\d)?|ME|PW|X-[A-Z0-9-]+)$/
 
 /** Portal 등록표 검사 — 각 앱의 portals.test.ts 가 부른다. 문제 목록(없으면 []). */
 export function validatePortals(portals: readonly PortalDef[]): string[] {

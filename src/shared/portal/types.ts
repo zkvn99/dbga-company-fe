@@ -6,7 +6,7 @@ import type { OtpAuthApi } from '../auth/otpAuthApi'
  * page 가 없으면 '백엔드 API 대기' 화면(PendingScreen)으로 열린다 — 기획서의 모든 화면을 빠짐없이 등록한다.
  */
 export interface ScreenDef {
-  /** 화면설계서 ID 'ADM-08-1'. 설계서에 없는 화면은 '<PORTAL>-X-<NAME>' (예: 'ADM-X-CODES'). */
+  /** 화면설계서 ID 'ADM-08-1' · 공통 내 정보 'ADM-ME' · 'SUP-PW'. 설계서에 없는 화면은 '<PORTAL>-X-<NAME>'. */
   id: string
   title: string
   page?: () => Promise<{ default: Component }>

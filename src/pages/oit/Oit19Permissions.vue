@@ -10,7 +10,7 @@ import { useAsync } from '@/shared/ui/useAsync'
 
 /**
  * 권한 조회 (화면설계서 밖 — ADR-0030 · ADR-0031): 역할 × 기본 세트 기능 표(잠금 표시) · 위임 가능 기능 · API ↔ 기능 표. 조회만.
- * 세트 편집 · 역할 이름 변경은 OIT-X-PERMISSION-SET.
+ * 세트 편집 · 역할 이름 변경은 OIT-10.
  */
 const catalog = useAsync(accountManageApi.permissions)
 const data = computed(() => catalog.data.value ?? null)
@@ -36,7 +36,7 @@ onMounted(() => void catalog.run())
 
 <template>
   <div>
-    <p><RouterLink :to="screenPath(oit, 'OIT-X-PERMISSION-SET')">권한 세트 · 역할 이름 관리 (OIT-X-PERMISSION-SET)</RouterLink></p>
+    <p><RouterLink :to="screenPath(oit, 'OIT-10')">권한 세트 · 역할 이름 관리 (OIT-10)</RouterLink></p>
     <ResultBox :error="catalog.error.value" />
     <template v-if="data">
       <h3>역할별 기본 세트 기능</h3>

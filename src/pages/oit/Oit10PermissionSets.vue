@@ -106,7 +106,7 @@ onMounted(reloadAll)
 <template>
   <div>
     <p>
-      <RouterLink :to="screenPath(oit, 'OIT-X-PERMISSION')">권한 조회 (역할 × 기본 세트 기능 · API 표)</RouterLink>
+      <RouterLink :to="screenPath(oit, 'OIT-19')">권한 조회 (역할 × 기본 세트 기능 · API 표)</RouterLink>
       <label class="inline"><input v-model="showAll" type="checkbox" /> 권한 없는 버튼도 보기 (403 확인용)</label>
       <button type="button" @click="reloadAll">다시 읽기</button>
     </p>
