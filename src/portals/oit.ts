@@ -3,7 +3,7 @@ import { oitAuthApi } from '@/api/auth'
 import { setupApi } from '@/api/setup'
 import { type PortalDef, pending } from '@/shared/portal/types'
 
-/** 회사 전산관리자(OIT, 역할 ORG_SYSTEM_ADMIN — 화면설계서의 "조직 전산관리자") — 화면설계서 v2.5 p.110~125. 내 정보 = 공통 페이지(p.10, OIT-ME). */
+/** 회사 전산관리자(OIT, 역할 ORG_SYSTEM_ADMIN — 화면설계서의 "조직 전산관리자") — 화면설계서 v2.5 p.110~125. 내 정보 = 공통 페이지(p.10, OIT-ME). OIT-20 역할 추가(p.118)는 만들지 않아 등록하지 않음(ADR-0035 — 역할 3개 고정, 팀장 등은 권한 세트). */
 export const oit: PortalDef = {
   key: 'oit',
   name: '회사 전산관리자 (OIT)',
@@ -110,7 +110,7 @@ export const oit: PortalDef = {
       page: () => import('@/pages/oit/Oit19Permissions.vue'),
       apis: ['GET /api/oit/permissions'],
       specPage: 117,
-      note: 'ADR-0031 · ADR-0035, 조회 전용. 표의 기능 = 역할 기본 세트(잠금 표시). [+ 역할 추가](OIT-20)는 하지 않음(ADR-0035). 세트 편집은 OIT-10, 기능 이름은 OIT-21',
+      note: 'ADR-0031 · ADR-0035, 조회 전용. 표의 기능 = 역할 기본 세트(잠금 표시). 역할 추가(OIT-20)는 없음 — 역할 3개 고정, 팀장 등은 권한 세트(ADR-0035). 세트 편집은 OIT-10, 기능 이름은 OIT-21',
     },
     {
       id: 'OIT-10',
@@ -130,7 +130,6 @@ export const oit: PortalDef = {
       ],
       note: 'ADR-0031. 추가 역할 · 역할 삭제(v2.4)는 하지 않음(ADR-0035 — 역할 3개 고정, 팀장 등은 역할 안 권한 세트로). 역할마다 표시 이름 · 세트 목록 · 추가 · 수정 · 기본 지정 · 삭제 · 이력. 기능 선택지 = 역할 assignable(잠금은 체크 · 표시, 빼도 서버가 유지). 계정별 예외(OIT-12)는 없음 — 계정에 세트 지정은 OIT-03',
     },
-    pending('OIT-20', '역할 추가 (모달)', 118, 'ADR-0035: 구현하지 않음 — 역할은 3개 고정, 팀장 같은 묶음은 그 역할 안 권한 세트(OIT-10)로 만든다'),
     {
       id: 'OIT-21',
       title: '권한 관리 — 기능 (탭)',
