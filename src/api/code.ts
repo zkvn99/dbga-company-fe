@@ -4,6 +4,7 @@ import type { AccountPortal } from './account'
 /** 코드 관리(OIT-08) · 선택지 — code CodeManageController · CodeOptionsController. */
 
 export type CodeGroupScope = 'SYSTEM_LOCKED' | 'EXTENSIBLE' | 'ORG' | 'COMPANY' | 'CENTER'
+export const CODE_GROUP_SCOPES: readonly CodeGroupScope[] = ['SYSTEM_LOCKED', 'EXTENSIBLE', 'ORG', 'COMPANY', 'CENTER']
 
 export interface CodeGroup {
   groupCode: string

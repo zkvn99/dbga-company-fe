@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ACCOUNT_ROLES, ACCOUNT_STATUSES, type AccountMe, type AccountRole, CREATE_FEATURE } from '@/api/account'
+import { ACCOUNT_ROLES, ACCOUNT_STATUSES, type AccountRole, CREATE_FEATURE } from '@/api/account'
 import { type AccountListItem, type AccountSearchQuery, type MemberProcessRequest, accountManageApi } from '@/api/accountManage'
 import { orgApi } from '@/api/org'
-import { HISTORY_COLUMNS, hasFeature, orgOptions } from '@/forms/accountFields'
+import { HISTORY_COLUMNS, orgOptions, roleNameOf, useFeatureGate } from '@/forms/accountFields'
 import { oit } from '@/portals/oit'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
@@ -14,7 +14,6 @@ import PagedList from '@/shared/ui/PagedList.vue'
 import ResultBox from '@/shared/ui/ResultBox.vue'
 import { type FieldDef, type Option, initialValues, opts, toPayload } from '@/shared/ui/fields'
 import type { Column } from '@/shared/ui/table'
-import { session } from '@/shared/portal/session'
 import { screenPath } from '@/shared/portal/types'
 import { useAsync } from '@/shared/ui/useAsync'
 
@@ -25,14 +24,12 @@ import { useAsync } from '@/shared/ui/useAsync'
  * 권한 세트 열(이름 · "기본 따름") · 필터(GET /api/oit/permissions 의 역할별 세트, 기본 세트를 고르면 미지정 계정 포함). 역할은 roleName(코드 병기).
  * PagedList 를 쓰지 않는 이유: summary 에 ALL 키가 있어 칩으로 그대로 쓰면 role=ALL(400)을 보냄 — 칩만 직접 그린다.
  */
-const me = computed(() => session.me as AccountMe | null)
-const showAll = ref(true) // frontend.md 5장: features로 숨기지 않는 게 기본(403 확인). 끄면 /me features대로 미리보기
-const can = (feature: string) => showAll.value || hasFeature(me.value, feature)
+const { showAll, can } = useFeatureGate()
 
 const orgs = useAsync(orgApi.oitOrgs)
 /** 역할 이름 · 세트 선택지(iam:permission:read — 없으면 403, 필터는 비고 역할은 코드만). */
 const catalog = useAsync(accountManageApi.permissions)
-const roleName = (r: AccountRole) => catalog.data.value?.roles.find((x) => x.role === r)?.roleName ?? null
+const roleName = (r: AccountRole) => roleNameOf(catalog.data.value, r)
 const setOptions = computed<Option[]>(() =>
   (catalog.data.value?.roles ?? []).flatMap((r) =>
     r.sets.map((s) => ({ value: s.setId, label: `[${r.roleName}] ${s.name}${s.isDefault ? ' (기본 — 미지정 계정 포함)' : ''} · ${s.accountCount}명` })),

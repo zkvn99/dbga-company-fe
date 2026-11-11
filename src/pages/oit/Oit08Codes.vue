@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { AccountMe } from '@/api/account'
-import { type AddOrgCodeRequest, type CodeGroup, type CodeItem, type EditOrgCodeRequest, type Regions, codeApi } from '@/api/code'
+import { type AddOrgCodeRequest, type CodeGroup, type CodeItem, type EditOrgCodeRequest, type Regions, CODE_GROUP_SCOPES, codeApi } from '@/api/code'
 import { orgApi } from '@/api/org'
-import { hasFeature, orgOptions } from '@/forms/accountFields'
+import { orgOptions, useFeatureGate } from '@/forms/accountFields'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
 import DataTable from '@/shared/ui/DataTable.vue'
@@ -11,7 +10,6 @@ import KeyValueTable from '@/shared/ui/KeyValueTable.vue'
 import ResultBox from '@/shared/ui/ResultBox.vue'
 import type { FieldDef } from '@/shared/ui/fields'
 import { type Column, cols } from '@/shared/ui/table'
-import { session } from '@/shared/portal/session'
 import { useAsync } from '@/shared/ui/useAsync'
 
 /**
@@ -19,9 +17,8 @@ import { useAsync } from '@/shared/ui/useAsync'
  * [조직 코드 추가] · [수정](이름 · 순서) · [사용]/[사용 안 함]은 editable 그룹 · 잠기지 않은 회사 코드 · code:code:manage 일 때만 보인다.
  * 지역 표준 탭: 시 · 도 + 권역(센터 사본, 조회만).
  */
-const me = computed(() => session.me as AccountMe | null)
-const showAll = ref(true) // frontend.md 5장: features로 숨기지 않는 게 기본(403 확인). 끄면 /me features대로 미리보기
-const canManage = computed(() => showAll.value || hasFeature(me.value, 'code:code:manage'))
+const { showAll, can } = useFeatureGate()
+const canManage = computed(() => can('code:code:manage'))
 
 const tab = ref<'codes' | 'regions'>('codes')
 const groups = useAsync(codeApi.groups)
@@ -32,7 +29,6 @@ const selected = ref<string | null>(null)
 const editing = ref<CodeItem | null>(null)
 const scopeFilter = ref<string>('')
 
-const SCOPES = ['SYSTEM_LOCKED', 'EXTENSIBLE', 'ORG', 'COMPANY', 'CENTER'] as const
 const scopeCounts = computed(() => {
   const counts: Record<string, number> = {}
   for (const g of groups.data.value ?? []) counts[g.scope] = (counts[g.scope] ?? 0) + 1
@@ -124,7 +120,7 @@ onMounted(() => {
       <ResultBox :error="groups.error.value" />
       <div class="cards">
         <button type="button" :class="{ on: !scopeFilter }" @click="scopeFilter = ''">전체 <b>{{ groups.data.value?.length ?? 0 }}</b></button>
-        <button v-for="s in SCOPES" :key="s" type="button" :class="{ on: scopeFilter === s }" @click="scopeFilter = s">
+        <button v-for="s in CODE_GROUP_SCOPES" :key="s" type="button" :class="{ on: scopeFilter === s }" @click="scopeFilter = s">
           {{ s }} <b>{{ scopeCounts[s] ?? 0 }}</b>
         </button>
       </div>

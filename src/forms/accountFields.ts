@@ -1,7 +1,9 @@
-import type { AccountMe } from '@/api/account'
-import type { AccountHistoryItem } from '@/api/accountManage'
+import { computed, ref } from 'vue'
+import type { AccountMe, AccountRole } from '@/api/account'
+import type { AccountHistoryItem, PermissionCatalog } from '@/api/accountManage'
 import type { CodeOption } from '@/api/code'
 import type { OrgUnit } from '@/api/org'
+import { session } from '@/shared/portal/session'
 import { type FieldDef, type Option, opts } from '@/shared/ui/fields'
 import { type Column, cols } from '@/shared/ui/table'
 
@@ -47,6 +49,21 @@ export function codeOptions(options: readonly CodeOption[] | null | undefined): 
 /** 로그인한 계정이 그 기능을 가졌나(/me features). 표시용 — 최종 판정은 서버. */
 export function hasFeature(me: AccountMe | null | undefined, feature: string): boolean {
   return !!me?.features?.includes(feature)
+}
+
+/**
+ * OIT 화면 버튼 표시 — frontend.md 5장: features로 숨기지 않는 게 기본(403 확인). showAll을 끄면 /me features대로 미리보기.
+ */
+export function useFeatureGate() {
+  const me = computed(() => session.me as AccountMe | null)
+  const showAll = ref(true)
+  const can = (feature: string) => showAll.value || hasFeature(me.value, feature)
+  return { me, showAll, can }
+}
+
+/** 권한 조회(GET /api/oit/permissions)의 역할 표시 이름 — 아직 못 읽었으면 null. */
+export function roleNameOf(catalog: PermissionCatalog | null | undefined, role: AccountRole): string | null {
+  return catalog?.roles.find((x) => x.role === role)?.roleName ?? null
 }
 
 /** 공통 이력 모달(ORG-34) 열 — 일시 · 구분 · 내용(이전 → 이후) · 사유 · 처리자. */

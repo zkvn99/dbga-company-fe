@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { AccountMe, AccountRole } from '@/api/account'
+import type { AccountRole } from '@/api/account'
 import { type CatalogRole, accountManageApi } from '@/api/accountManage'
 import { type PermissionSet, type PermissionSetHistoryItem, permissionSetApi } from '@/api/permissionSet'
-import { hasFeature } from '@/forms/accountFields'
+import { useFeatureGate } from '@/forms/accountFields'
 import { oit } from '@/portals/oit'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
@@ -12,7 +12,6 @@ import PagedList from '@/shared/ui/PagedList.vue'
 import ResultBox from '@/shared/ui/ResultBox.vue'
 import type { FieldDef, Option } from '@/shared/ui/fields'
 import { type Column, cols } from '@/shared/ui/table'
-import { session } from '@/shared/portal/session'
 import { screenPath } from '@/shared/portal/types'
 import { useAsync } from '@/shared/ui/useAsync'
 
@@ -22,9 +21,7 @@ import { useAsync } from '@/shared/ui/useAsync'
  * 기능 체크 = 그 역할의 assignable. 잠금 기능은 처음부터 체크 · "잠금" 표시 — 체크를 풀어도 막지 않고 그대로 보낸다(서버가 잠금은 유지).
  * 버튼은 숨기지 않는 게 기본(403 확인) — "권한 없는 버튼 숨기기"로 /me features 미리보기.
  */
-const me = computed(() => session.me as AccountMe | null)
-const showAll = ref(true) // frontend.md 5장: features로 숨기지 않는 게 기본(403 확인). 끄면 /me features대로 미리보기
-const can = (feature: string) => showAll.value || hasFeature(me.value, feature)
+const { showAll, can } = useFeatureGate()
 
 const catalog = useAsync(accountManageApi.permissions)
 const sets = useAsync(permissionSetApi.list)

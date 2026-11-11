@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ACCOUNT_ROLES, type AccountMe, type AccountRole, CREATE_FEATURE, type RegisterAccountRequest, accountApi } from '@/api/account'
+import { ACCOUNT_ROLES, type AccountRole, CREATE_FEATURE, type RegisterAccountRequest, accountApi } from '@/api/account'
 import {
   type AccountDetail,
   type ChangeDelegationsRequest,
@@ -16,7 +16,7 @@ import {
 import { type CodeOption, codeApi } from '@/api/code'
 import { orgApi } from '@/api/org'
 import { type PermissionSet, permissionSetApi } from '@/api/permissionSet'
-import { ALIMTALK, GENDER, HISTORY_COLUMNS, PHONES, SCOPE_TYPE, accountInitial, codeOptions, hasFeature, orgOptions } from '@/forms/accountFields'
+import { ALIMTALK, GENDER, HISTORY_COLUMNS, PHONES, SCOPE_TYPE, accountInitial, codeOptions, hasFeature, orgOptions, roleNameOf, useFeatureGate } from '@/forms/accountFields'
 import { oit } from '@/portals/oit'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
@@ -24,7 +24,6 @@ import KeyValueTable from '@/shared/ui/KeyValueTable.vue'
 import PagedList from '@/shared/ui/PagedList.vue'
 import ResultBox from '@/shared/ui/ResultBox.vue'
 import { type FieldDef, type FormValues, type Option, opts } from '@/shared/ui/fields'
-import { session } from '@/shared/portal/session'
 import { screenPath } from '@/shared/portal/types'
 import { useAsync } from '@/shared/ui/useAsync'
 
@@ -40,15 +39,13 @@ import { useAsync } from '@/shared/ui/useAsync'
 const route = useRoute()
 const accountId = computed(() => (typeof route.query.accountId === 'string' && route.query.accountId) || null)
 
-const me = computed(() => session.me as AccountMe | null)
-const showAll = ref(true) // frontend.md 5장: features로 숨기지 않는 게 기본(403 확인). 끄면 /me features대로 미리보기
-const can = (feature: string) => showAll.value || hasFeature(me.value, feature)
+const { me, showAll, can } = useFeatureGate()
 
 // 공통 선택지 — 조직 · 위임 기능
 const orgs = useAsync(orgApi.oitOrgs)
 const orgOpts = computed(() => orgOptions(orgs.data.value))
 const catalog = useAsync(accountManageApi.permissions)
-const roleName = (r: AccountRole) => catalog.data.value?.roles.find((x) => x.role === r)?.roleName ?? null
+const roleName = (r: AccountRole) => roleNameOf(catalog.data.value, r)
 /** 그 역할에 위임할 수 있는 기능(GET /api/oit/permissions roles[].delegable — 역할 Portal 기능 − 잠금 − 위임 금지, ADR-0032). */
 const delegableFor = (r: AccountRole | null | undefined): Option[] =>
   catalog.data.value?.roles.find((x) => x.role === r)?.delegable.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })) ?? []
