@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { type OrgUnit, orgManageApi } from '@/api/org'
+import { type MemberListItem, type MemberSearchQuery, orgMemberApi } from '@/api/orgMember'
 import { useFeatureGate } from '@/forms/accountFields'
 import { EDIT_FIELDS, LEADER_FIELDS, ORG_HISTORY_COLUMNS, ORG_MANAGE, TREE_COLUMNS, detailRows, moveFields } from '@/forms/orgFields'
 import { org } from '@/portals/org'
@@ -8,7 +9,9 @@ import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
 import DataTable from '@/shared/ui/DataTable.vue'
 import KeyValueTable from '@/shared/ui/KeyValueTable.vue'
+import PagedList from '@/shared/ui/PagedList.vue'
 import ResultBox from '@/shared/ui/ResultBox.vue'
+import type { Column } from '@/shared/ui/table'
 import { screenPath } from '@/shared/portal/types'
 import { useAsync } from '@/shared/ui/useAsync'
 
@@ -38,6 +41,15 @@ async function reload(): Promise<void> {
   }
 }
 const id = () => selectedId.value as string
+/** 소속 조직원 — 고른 조직과 그 아래 조직의 설계사(ORG-24와 같은 API, iam:member:read). */
+const memberLoad = (query: MemberSearchQuery) => orgMemberApi.members({ ...query, orgId: selectedId.value })
+const memberColumns: Column<MemberListItem>[] = [
+  { key: 'name', label: '이름' },
+  { key: 'loginId', label: '아이디' },
+  { key: 'org', label: '소속', value: (r) => r.org?.orgName },
+  { key: 'role', label: '역할', value: (r) => r.roleName ?? r.role },
+  { key: 'status', label: '상태' },
+]
 
 onMounted(() => void tree.run())
 </script>
@@ -95,6 +107,12 @@ onMounted(() => void tree.run())
           />
         </p>
       </template>
+      <h4>소속 조직원 (아래 조직 포함)</h4>
+      <PagedList :key="`members-${selected.orgId}`" :load="memberLoad" :columns="memberColumns">
+        <template #actions="{ row }">
+          <RouterLink :to="screenPath(org, 'ORG-32', row.accountId)">상세</RouterLink>
+        </template>
+      </PagedList>
       <h4>이력 (ORG-34)</h4>
       <ResultBox :error="history.error.value" />
       <DataTable :rows="history.data.value?.items ?? []" :columns="ORG_HISTORY_COLUMNS" />
