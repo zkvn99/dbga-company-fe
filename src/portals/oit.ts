@@ -41,7 +41,7 @@ export const oit: PortalDef = {
       page: () => import('@/shared/pages/ChangePasswordPage.vue'),
       apis: ['PUT /api/oit/me/password'],
       specPage: 113,
-      note: '지금은 비밀번호 변경 단계만 — 센터 등록 · 회사 생성은 로그인 전 설치 셋업(OIT-18), 회사 정보 · 조직 셋업(company.setup_status)은 API 대기',
+      note: '구축형 — 비밀번호 변경만. 설계서의 조직 등록 · 기본 설정 · 메뉴 잠금 단계는 하지 않음(센터 등록 · 회사 생성은 로그인 전 설치 셋업 OIT-18)',
     },
     { id: 'OIT-ME', title: '내 정보', setup: true, page: () => import('@/shared/pages/MePage.vue'), apis: ['GET /api/oit/me'], specPage: 10 },
     {
@@ -143,6 +143,9 @@ export const oit: PortalDef = {
       title: '조직 설정 — 회사 정보 · 조직',
       page: () => import('@/pages/oit/Oit13OrgSettings.vue'),
       apis: [
+        'GET /api/oit/company',
+        'PUT /api/oit/company',
+        'GET /api/oit/accounts',
         'GET /api/oit/orgs',
         'GET /api/oit/orgs/{orgId}',
         'GET /api/oit/orgs/{orgId}/history',
@@ -155,7 +158,7 @@ export const oit: PortalDef = {
         'DELETE /api/oit/orgs/{orgId}',
       ],
       specPage: 123,
-      note: '조직도 부분만(ORG-27과 같은 규칙). 회사 정보 수정 · 조직 관리자 목록은 B단계(API 없음)',
+      note: '회사 정보(주소 · 대표 연락처 수정) · 조직도(ORG-27과 같은 규칙) · 소속 조직원(아래 포함). 조직 관리자 · 관리 범위 목록은 OIT-03(범위) · OIT-10(세트)에서 — OIT-13에 따로 두지 않음. 통계 전송 · 구매 허용 설정은 그 기능 때',
     },
     pending('OIT-16', '공급업체 계약', 124),
     pending('OIT-17', '계약 신청 · 동의 (모달)', 125),
