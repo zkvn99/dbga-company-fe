@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { type AddOrgCodeRequest, type CodeGroup, type CodeItem, type EditOrgCodeRequest, type Regions, CODE_GROUP_SCOPES, codeApi } from '@/api/code'
-import { orgApi } from '@/api/org'
-import { orgOptions, useFeatureGate } from '@/forms/accountFields'
+import { type AddCompanyCodeRequest, type CodeGroup, type CodeItem, type EditCompanyCodeRequest, type Regions, CODE_GROUP_SCOPES, codeApi } from '@/api/code'
+import { useFeatureGate } from '@/forms/accountFields'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
 import DataTable from '@/shared/ui/DataTable.vue'
@@ -14,7 +13,8 @@ import { useAsync } from '@/shared/ui/useAsync'
 
 /**
  * OIT-08 코드 관리 — 왼쪽 그룹 트리(parentGroupCode 로 조립, 적용 범위 칩으로 거르기, 센터 사본 = 조회만) · 오른쪽 선택 그룹의 코드.
- * [조직 코드 추가] · [수정](이름 · 순서) · [사용]/[사용 안 함]은 editable 그룹 · 잠기지 않은 회사 코드 · code:code:manage 일 때만 보인다.
+ * [코드 추가] · [수정](이름 · 순서) · [사용]/[사용 안 함]은 editable 그룹 · 잠기지 않은 회사 코드 · code:code:manage 일 때만 보인다.
+ * 코드는 회사 단위 하나 — 조직별 적용 범위 없음(ADR-0038).
  * 지역 표준 탭: 시 · 도 + 권역(센터 사본, 조회만).
  */
 const { showAll, can } = useFeatureGate()
@@ -24,7 +24,6 @@ const tab = ref<'codes' | 'regions'>('codes')
 const groups = useAsync(codeApi.groups)
 const group = useAsync(codeApi.group)
 const regions = useAsync(codeApi.regions)
-const orgs = useAsync(orgApi.oitOrgs)
 const selected = ref<string | null>(null)
 const editing = ref<CodeItem | null>(null)
 const scopeFilter = ref<string>('')
@@ -62,17 +61,16 @@ const editable = computed(() => !!detail.value?.editable && canManage.value)
 const groupFields = cols<Record<string, unknown>>(['groupCode:그룹 코드', 'parentGroupCode:상위 그룹', 'name:이름', 'scope:적용 범위', 'source:원본', 'usedIn:사용 화면', 'active:사용', 'codeCount:코드 수'])
 const codeColumns: Column<CodeItem>[] = [
   ...cols<CodeItem>(['sortOrder:순서', 'code:코드', 'name:코드명']),
-  { key: 'ownerOrgName', label: '적용 범위', value: (r) => r.ownerOrgName ?? '시스템 기본' },
+  { key: 'systemDefault', label: '구분', value: (r) => (r.systemDefault ? '시스템 기본' : '회사 코드') },
   ...cols<CodeItem>(['active:사용', 'locked:잠금', 'codeId:codeId']),
 ]
 const rowEditable = (row: CodeItem) => (editable.value || showAll.value) && !!row.codeId && (!row.locked || showAll.value)
 
-const addFields = computed<FieldDef[]>(() => [
-  { key: 'code', label: '코드', required: true, help: '영문 대문자 · 숫자 · _ 1~40자, 등록 후 불변. 다른 조직과 겹쳐도 됨' },
+const addFields: FieldDef[] = [
+  { key: 'code', label: '코드', required: true, help: '영문 대문자 · 숫자 · _ 1~40자, 등록 후 불변. 같은 그룹에 같은 값은 하나' },
   { key: 'name', label: '코드명', required: true },
-  { key: 'orgId', label: '적용 조직', type: 'select', options: orgOptions(orgs.data.value), required: true, help: '아래 조직 포함 · 관리 범위 안' },
   { key: 'sortOrder', label: '순서', type: 'number', required: true, help: '0~9999' },
-])
+]
 const editFields: FieldDef[] = [
   { key: 'name', label: '코드명', required: true },
   { key: 'sortOrder', label: '순서', type: 'number', required: true },
@@ -87,8 +85,8 @@ function reload(): void {
   void groups.run()
   if (selected.value) void group.run(selected.value)
 }
-const addCode = (body: AddOrgCodeRequest) => codeApi.addCode(selected.value!, body)
-const editCode = (body: EditOrgCodeRequest) => codeApi.editCode(selected.value!, editing.value!.codeId!, body)
+const addCode = (body: AddCompanyCodeRequest) => codeApi.addCode(selected.value!, body)
+const editCode = (body: EditCompanyCodeRequest) => codeApi.editCode(selected.value!, editing.value!.codeId!, body)
 
 function openRegions(): void {
   tab.value = 'regions'
@@ -102,10 +100,7 @@ const regionGroupColumns: Column<Regions['groups'][number]>[] = [
   { key: 'groupId', label: 'groupId' },
 ]
 
-onMounted(() => {
-  void groups.run()
-  void orgs.run()
-})
+onMounted(() => void groups.run())
 </script>
 
 <template>
@@ -141,7 +136,7 @@ onMounted(() => {
       <template v-if="selected && detail">
         <h2>{{ detail.group.name }} ({{ detail.group.groupCode }})</h2>
         <KeyValueTable :data="detail.group" :fields="groupFields" />
-        <p class="muted">editable = {{ detail.editable }} — {{ detail.editable ? '조직 코드 추가 · 수정 가능 그룹' : '조회만 (시스템 · 잠금 / 센터 사본)' }}</p>
+        <p class="muted">editable = {{ detail.editable }} — {{ detail.editable ? '회사 코드 추가 · 수정 가능 그룹' : '조회만 (시스템 · 잠금 / 센터 사본)' }}</p>
         <DataTable :rows="detail.codes" :columns="codeColumns">
           <template #actions="{ row }">
             <template v-if="rowEditable(row)">
@@ -155,7 +150,7 @@ onMounted(() => {
         <ApiForm v-if="editing" :key="editing.codeId ?? editing.code" :title="`코드 수정: ${editing.code}`" :fields="editFields" :initial="editing" :submit="editCode" @success="reload">
           <template #buttons><button type="button" @click="editing = null">닫기</button></template>
         </ApiForm>
-        <ApiForm v-if="editable || showAll" :key="`${selected}-add`" title="조직 코드 추가" :fields="addFields" :submit="addCode" submit-label="추가" @success="reload" />
+        <ApiForm v-if="editable || showAll" :key="`${selected}-add`" title="코드 추가" :fields="addFields" :submit="addCode" submit-label="추가" @success="reload" />
       </template>
     </template>
 

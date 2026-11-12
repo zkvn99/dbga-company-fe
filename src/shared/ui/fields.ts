@@ -14,6 +14,7 @@ export type FieldType =
   | 'checkbox'
   | 'csv' // 쉼표 구분 입력 → string[]
   | 'multicheck' // 옵션 여러 개 선택 → string[]
+  | 'treecheck' // 트리 옵션(parent) 선택 → 맨 위 선택만 string[] — 고른 항목의 아래는 '포함됨'
   | 'boolmap' // 옵션별 체크 → Record<string, boolean>
   | 'list' // 행 추가 · 삭제 → itemFields 객체 배열
   | 'readonly' // 표시만, 요청에 넣지 않음
@@ -22,6 +23,8 @@ export type FieldType =
 export interface Option {
   value: string
   label: string
+  /** type 'treecheck' — 상위 옵션의 value(없으면 맨 위). 옵션은 트리 순서(상위 먼저)로 준다. */
+  parent?: string | null
 }
 
 export interface FieldDef {
@@ -51,6 +54,7 @@ function emptyValue(field: FieldDef): unknown {
     case 'number':
       return null
     case 'multicheck':
+    case 'treecheck':
     case 'list':
       return []
     case 'boolmap':
@@ -101,6 +105,9 @@ export function toPayload(fields: readonly FieldDef[], values: FormValues): Reco
       case 'list':
         out[field.key] = ((v as FormValues[] | undefined) ?? []).map((item) => toPayload(field.itemFields ?? [], item))
         break
+      case 'treecheck':
+        out[field.key] = treeTopMost(field.options ?? [], (v as string[] | undefined) ?? [])
+        break
       default:
         out[field.key] = v === '' ? null : v
     }
@@ -111,3 +118,32 @@ export function toPayload(fields: readonly FieldDef[], values: FormValues): Reco
 export function newListItem(field: FieldDef): FormValues {
   return initialValues(field.itemFields ?? [])
 }
+
+/** 트리 옵션에서 value 의 조상 value 들(가까운 순). */
+export function treeAncestors(options: readonly Option[], value: string): string[] {
+  const parentOf = new Map(options.map((o) => [o.value, o.parent ?? null]))
+  const out: string[] = []
+  let p = parentOf.get(value) ?? null
+  while (p && !out.includes(p)) {
+    out.push(p)
+    p = parentOf.get(p) ?? null
+  }
+  return out
+}
+
+/** 고른 항목의 아래라 이미 포함된 항목인가(자신은 고르지 않았어도). */
+export function treeIncluded(options: readonly Option[], selected: readonly string[], value: string): boolean {
+  return treeAncestors(options, value).some((a) => selected.includes(a))
+}
+
+/** 고른 항목 중 맨 위만 남긴다(아래 항목은 상위에 포함되므로 뺀다). 순서 유지 · 중복 제거. */
+export function treeTopMost(options: readonly Option[], selected: readonly string[]): string[] {
+  const unique = [...new Set(selected)]
+  return unique.filter((v) => !treeIncluded(options, unique, v))
+}
+
+/** 트리 깊이(맨 위 = 0) — 들여쓰기 표시용. */
+export function treeDepth(options: readonly Option[], value: string): number {
+  return treeAncestors(options, value).length
+}
+

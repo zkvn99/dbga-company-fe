@@ -31,13 +31,21 @@ export const ALIMTALK: FieldDef = {
 
 export const GENDER: FieldDef = { key: 'gender', label: '성별', type: 'select', options: opts(['M', 'F']) }
 
-export const SCOPE_TYPE: FieldDef = { key: 'scopeType', label: '관리 범위', type: 'select', options: opts(['COMPANY', 'ORG']), help: 'COMPANY 회사 전체 · ORG 조직 선택' }
 
 /** 조직 목록 → 선택지(깊이만큼 들여쓰기, 범위 밖 · 사용 안 함 표시). 선택은 막지 않는다 — 서버 검증 확인용. */
 export function orgOptions(orgs: readonly OrgUnit[] | null | undefined): Option[] {
   return (orgs ?? []).map((o) => ({
     value: o.orgId,
     label: `${'　'.repeat(o.depth)}${o.name}${o.inScope ? '' : ' (범위 밖)'}${o.active ? '' : ' (사용 안 함)'}`,
+  }))
+}
+
+/** 조직 트리 옵션(type 'treecheck') — 상위 조직을 고르면 그 아래 조직은 포함됨. 들여쓰기는 컴포넌트가 parent로 그린다. */
+export function orgTreeOptions(orgs: readonly OrgUnit[] | null | undefined): Option[] {
+  return (orgs ?? []).map((o) => ({
+    value: o.orgId,
+    label: `${o.name}${o.inScope ? '' : ' (범위 밖)'}${o.active ? '' : ' (사용 안 함)'}`,
+    parent: o.parentOrgId,
   }))
 }
 

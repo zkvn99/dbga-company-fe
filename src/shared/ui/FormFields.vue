@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 import type { FieldError } from '../http/types'
-import { type FieldDef, type FormValues, newListItem } from './fields'
+import { type FieldDef, type FormValues, newListItem, treeDepth, treeIncluded, treeTopMost } from './fields'
 
 /** 필드 정의대로 입력을 그린다. 서버 fieldErrors 를 `prefix + key` 경로로 찾아 필드 아래 표시. */
 const props = withDefaults(
@@ -43,6 +43,13 @@ async function pickFile(field: FieldDef, event: Event): Promise<void> {
   }
 }
 
+/** 트리 선택: 고르면 그 아래 선택은 지운다(상위에 포함) — 값은 늘 맨 위 선택만. */
+function toggleTree(f: FieldDef, value: string, on: boolean): void {
+  const arr = arrayOf(f.key)
+  const next = treeTopMost(f.options ?? [], on ? [...arr, value] : arr.filter((v) => v !== value))
+  arr.splice(0, arr.length, ...next)
+}
+
 function toggle(key: string, value: string, on: boolean): void {
   const arr = arrayOf(key)
   const i = arr.indexOf(value)
@@ -73,6 +80,22 @@ function toggle(key: string, value: string, on: boolean): void {
             :checked="arrayOf(f.key).includes(o.value)"
             @change="toggle(f.key, o.value, ($event.target as HTMLInputElement).checked)"
           />{{ o.label }}
+        </label>
+      </span>
+      <span v-else-if="f.type === 'treecheck'" class="tree">
+        <label
+          v-for="o in f.options"
+          :key="o.value"
+          class="tree-item"
+          :style="{ paddingLeft: `${treeDepth(f.options ?? [], o.value) * 1.25}em` }"
+        >
+          <input
+            type="checkbox"
+            :checked="arrayOf(f.key).includes(o.value) || treeIncluded(f.options ?? [], arrayOf(f.key), o.value)"
+            :disabled="treeIncluded(f.options ?? [], arrayOf(f.key), o.value)"
+            @change="toggleTree(f, o.value, ($event.target as HTMLInputElement).checked)"
+          />{{ o.label }}
+          <span v-if="treeIncluded(f.options ?? [], arrayOf(f.key), o.value)" class="muted"> (포함됨)</span>
         </label>
       </span>
       <span v-else-if="f.type === 'boolmap'">

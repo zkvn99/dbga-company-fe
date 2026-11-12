@@ -16,14 +16,14 @@ import {
 import { type CodeOption, codeApi } from '@/api/code'
 import { orgApi } from '@/api/org'
 import { type PermissionSet, permissionSetApi } from '@/api/permissionSet'
-import { ALIMTALK, GENDER, HISTORY_COLUMNS, PHONES, SCOPE_TYPE, accountInitial, codeOptions, hasFeature, orgOptions, roleNameOf, useFeatureGate } from '@/forms/accountFields'
+import { ALIMTALK, GENDER, HISTORY_COLUMNS, PHONES, accountInitial, codeOptions, hasFeature, orgOptions, orgTreeOptions, roleNameOf, useFeatureGate } from '@/forms/accountFields'
 import { oit } from '@/portals/oit'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
 import KeyValueTable from '@/shared/ui/KeyValueTable.vue'
 import PagedList from '@/shared/ui/PagedList.vue'
 import ResultBox from '@/shared/ui/ResultBox.vue'
-import { type FieldDef, type FormValues, type Option, opts } from '@/shared/ui/fields'
+import { type FieldDef, type Option, opts } from '@/shared/ui/fields'
 import { screenPath } from '@/shared/portal/types'
 import { useAsync } from '@/shared/ui/useAsync'
 
@@ -44,27 +44,28 @@ const { me, showAll, can } = useFeatureGate()
 // 공통 선택지 — 조직 · 위임 기능
 const orgs = useAsync(orgApi.oitOrgs)
 const orgOpts = computed(() => orgOptions(orgs.data.value))
+const orgTreeOpts = computed(() => orgTreeOptions(orgs.data.value))
 const catalog = useAsync(accountManageApi.permissions)
 const roleName = (r: AccountRole) => roleNameOf(catalog.data.value, r)
 /** 그 역할에 위임할 수 있는 기능(GET /api/oit/permissions roles[].delegable — 역할 Portal 기능 − 잠금 − 위임 금지, ADR-0032). */
 const delegableFor = (r: AccountRole | null | undefined): Option[] =>
   catalog.data.value?.roles.find((x) => x.role === r)?.delegable.map((d) => ({ value: d.code, label: `${d.label} (${d.code})` })) ?? []
+const SCOPE_ORGS_HELP = '조직 관리자 · 전산관리자. 고른 조직과 그 아래 조직 전부가 범위(저장은 맨 위 조직만). 회사(맨 위)를 고르면 회사 전체'
+/** 회사(최상위) 조직 — 관리 범위가 회사 전체(COMPANY)면 트리에서 이 조직이 체크된 것으로 보인다. */
+const topOrgId = computed(() => orgs.data.value?.find((o) => o.parentOrgId == null)?.orgId ?? null)
+/**
+ * 관리 범위는 관리 조직 트리 하나로 고른다 — 고른 조직이 있으면 scopeType ORG(회사 조직이면 서버가 COMPANY로 저장), 없으면 범위 없음(설계사).
+ */
+function withScope<T extends { scopeOrgIds?: string[] | null }>(body: T): T & { scopeType: 'ORG' | null; scopeOrgIds: string[] } {
+  const ids = body.scopeOrgIds ?? []
+  return { ...body, scopeType: ids.length ? 'ORG' : null, scopeOrgIds: ids }
+}
 const DELEGATION_HELP = '권한 세트에 더해 이 계정만 추가로 갖는 기능. 세트에 이미 있는 기능을 넣어도 됨(세트에서 빠져도 유지)'
 
-/** 조직별 직급 · 직책 선택지(조직 바뀔 때마다 다시 읽음). */
-function useOrgCodes() {
-  const call = useAsync(codeApi.options)
-  let last: string | null = null
-  function load(orgId: unknown): void {
-    const id = typeof orgId === 'string' && orgId ? orgId : null
-    if (id === last && call.data.value) return
-    last = id
-    void call.run('oit', ['RANK', 'POSITION'], id)
-  }
-  const rank = computed(() => codeOptions((call.data.value as Record<string, CodeOption[]> | undefined)?.RANK))
-  const position = computed(() => codeOptions((call.data.value as Record<string, CodeOption[]> | undefined)?.POSITION))
-  return { call, load, rank, position }
-}
+/** 직급 · 직책 선택지 — 회사 단위 하나라 한 번만 읽는다(ADR-0038). 등록 · 수정이 같이 쓴다. */
+const codes = useAsync(() => codeApi.options('oit', ['RANK', 'POSITION']))
+const rankOpts = computed(() => codeOptions((codes.data.value as Record<string, CodeOption[]> | undefined)?.RANK))
+const positionOpts = computed(() => codeOptions((codes.data.value as Record<string, CodeOption[]> | undefined)?.POSITION))
 
 /** 역할별 권한 세트 선택지(역할 바뀔 때마다 다시 읽음). */
 function useRoleSets() {
@@ -82,22 +83,16 @@ const SET_HELP = '(선택 안 함) = 역할 기본 세트 따르기'
 function basicFields(rank: Option[], position: Option[]): FieldDef[] {
   return [
     { key: 'orgId', label: '소속 조직', type: 'select', options: orgOpts.value, required: true },
-    { key: 'rankCode', label: '직급 (조직 코드)', type: 'select', options: rank },
-    { key: 'positionCode', label: '직책 (조직 코드)', type: 'select', options: position },
+    { key: 'rankCode', label: '직급', type: 'select', options: rank },
+    { key: 'positionCode', label: '직책', type: 'select', options: position },
   ]
 }
 
 // ── 등록 ────────────────────────────────────────────
 const creatable = computed(() => ACCOUNT_ROLES.filter((r) => can(CREATE_FEATURE[r])))
 const role = ref<AccountRole>('AGENT')
-const createForm = ref<{ values: FormValues } | null>(null)
-const createCodes = useOrgCodes()
 const createSets = useRoleSets()
 watch(role, (r) => createSets.load(r), { immediate: true })
-watch(
-  () => createForm.value?.values.orgId,
-  (orgId) => createCodes.load(orgId),
-)
 
 const createFields = computed<FieldDef[]>(() => {
   const r = role.value
@@ -109,24 +104,24 @@ const createFields = computed<FieldDef[]>(() => {
     { key: 'birthDate', label: '생년월일', type: 'date' },
     { key: 'hireDate', label: '입사일', type: 'date' },
     GENDER,
-    ...basicFields(createCodes.rank.value, createCodes.position.value),
+    ...basicFields(rankOpts.value, positionOpts.value),
     PHONES,
     ALIMTALK,
   ]
   if (r !== 'AGENT') {
-    fields.push({ ...SCOPE_TYPE, required: true }, { key: 'scopeOrgIds', label: '관리 조직', type: 'multicheck', options: orgOpts.value, help: 'scopeType=ORG 일 때' })
+    fields.push({ key: 'scopeOrgIds', label: '관리 범위', type: 'treecheck', options: orgTreeOpts.value, required: true, help: SCOPE_ORGS_HELP })
   }
   fields.push({ key: 'delegations', label: `위임 기능 (${r})`, type: 'multicheck', options: delegableFor(r), help: DELEGATION_HELP })
   fields.push({ key: 'permissionSetId', label: `권한 세트 (${r})`, type: 'select', options: createSets.options.value, help: SET_HELP })
   return fields
 })
-const createInitial = computed(() => ({ ...accountInitial(me.value), scopeType: role.value === 'AGENT' ? '' : 'COMPANY' }))
+const createInitial = computed(() => ({ ...accountInitial(me.value), scopeOrgIds: [] }))
 const CREATE: Record<AccountRole, (body: RegisterAccountRequest) => Promise<unknown>> = {
   ORG_SYSTEM_ADMIN: accountApi.createSystemAdmin,
   ORG_MANAGER: accountApi.createManager,
   AGENT: accountApi.createAgent,
 }
-const createSubmit = (body: RegisterAccountRequest) => CREATE[role.value](body)
+const createSubmit = (body: RegisterAccountRequest) => CREATE[role.value](withScope(body))
 
 // ── 수정 ────────────────────────────────────────────
 const detail = useAsync(accountManageApi.account)
@@ -136,16 +131,10 @@ function reloadDetail(): void {
   if (accountId.value) void detail.run(accountId.value)
 }
 
-const editForm = ref<{ values: FormValues } | null>(null)
-const editCodes = useOrgCodes()
 const editSets = useRoleSets()
 watch(
   () => d.value?.role,
   (r) => editSets.load(r),
-)
-watch(
-  () => editForm.value?.values.orgId,
-  (orgId) => editCodes.load(orgId),
 )
 
 const summaryFields = [
@@ -180,7 +169,7 @@ const editBasicFields = computed<FieldDef[]>(() => [
   { key: 'birthDate', label: '생년월일 — 새 값 입력 시 변경', type: 'date', help: `현재 ${d.value?.birthDate ?? '-'} · 비우면 그대로` },
   { key: 'hireDate', label: '입사일', type: 'date' },
   GENDER,
-  ...basicFields(editCodes.rank.value, editCodes.position.value),
+  ...basicFields(rankOpts.value, positionOpts.value),
   { key: 'status', label: '상태', type: 'select', options: opts(['ACTIVE', 'LEAVE']), help: '활동 · 휴직만. 비우면 그대로 · 정지 · 탈퇴는 회원 처리(OIT-02)' },
 ])
 const editBasicInitial = computed(() => {
@@ -225,14 +214,17 @@ const contactInitial = computed(() =>
 const alimtalkFields: FieldDef[] = [ALIMTALK]
 const roleFields = computed<FieldDef[]>(() => [
   { key: 'role', label: '역할', type: 'select', options: opts(ACCOUNT_ROLES), required: true },
-  { ...SCOPE_TYPE, help: '조직 관리자 · 전산관리자면 필수, 설계사면 비움' },
-  { key: 'scopeOrgIds', label: '관리 조직', type: 'multicheck', options: orgOpts.value },
+  { key: 'scopeOrgIds', label: '관리 범위', type: 'treecheck', options: orgTreeOpts.value, help: `${SCOPE_ORGS_HELP} · 설계사로 바꾸면 비움` },
 ])
 const scopeFields = computed<FieldDef[]>(() => [
-  { ...SCOPE_TYPE, required: true },
-  { key: 'scopeOrgIds', label: '관리 조직', type: 'multicheck', options: orgOpts.value, help: 'scopeType=ORG 일 때' },
+  { key: 'scopeOrgIds', label: '관리 범위', type: 'treecheck', options: orgTreeOpts.value, required: true, help: SCOPE_ORGS_HELP },
 ])
-const scopeInitial = computed(() => (d.value ? { role: d.value.role, scopeType: d.value.scope?.scopeType, scopeOrgIds: d.value.scope?.orgs.map((o) => o.orgId) ?? [] } : null))
+const scopeInitial = computed(() => {
+  if (!d.value) return null
+  const company = d.value.scope?.scopeType === 'COMPANY'
+  const ids = company ? (topOrgId.value ? [topOrgId.value] : []) : (d.value.scope?.orgs.map((o) => o.orgId) ?? [])
+  return { role: d.value.role, scopeOrgIds: ids }
+})
 const delegationFields = computed<FieldDef[]>(() => [{ key: 'features', label: `위임 기능 (${d.value?.role ?? '-'}, 전체 교체)`, type: 'multicheck', options: delegableFor(d.value?.role), help: `${DELEGATION_HELP} · 목록에 없는 옛 위임은 체크를 풀어 해제만 가능` }])
 const permissionSetFields = computed<FieldDef[]>(() => [{ key: 'setId', label: `권한 세트 (${d.value?.role ?? '-'})`, type: 'select', options: editSets.options.value, help: SET_HELP }])
 const permissionSetInitial = computed(() => (d.value ? { setId: d.value.permissionSet?.assigned ? d.value.permissionSet.setId : '' } : null))
@@ -242,8 +234,8 @@ const id = () => accountId.value!
 const saveBasic = (body: EditAccountRequest) => accountManageApi.edit(id(), body)
 const saveContacts = (body: EditContactsRequest) => accountManageApi.editContacts(id(), body)
 const saveAlimtalk = (body: EditAlimtalkRequest) => accountManageApi.editAlimtalk(id(), body)
-const saveRole = (body: ChangeRoleRequest) => accountManageApi.changeRole(id(), body)
-const saveScope = (body: ChangeScopeRequest) => accountManageApi.changeScope(id(), body)
+const saveRole = (body: ChangeRoleRequest) => accountManageApi.changeRole(id(), withScope(body))
+const saveScope = (body: ChangeScopeRequest) => accountManageApi.changeScope(id(), withScope(body))
 const saveDelegations = (body: ChangeDelegationsRequest) => accountManageApi.changeDelegations(id(), body)
 const savePermissionSet = (body: ChangePermissionSetRequest) => accountManageApi.changePermissionSet(id(), body)
 const historyLoad = (q: { page?: number; size?: number }) => accountManageApi.history(id(), q)
@@ -261,6 +253,7 @@ watch(
 )
 onMounted(() => {
   void orgs.run()
+  void codes.run()
   if (hasFeature(me.value, 'iam:permission:read')) void catalog.run()
   reloadDetail()
 })
@@ -286,9 +279,9 @@ onMounted(() => {
             <option v-for="r in creatable" :key="r" :value="r">{{ roleName(r) ? `${roleName(r)} (${r})` : r }} — {{ CREATE_FEATURE[r] }}</option>
           </select>
         </label>
-        <ResultBox :error="createCodes.call.error.value" />
+        <ResultBox :error="codes.error.value" />
         <ResultBox :error="createSets.call.error.value" />
-        <ApiForm ref="createForm" :key="role" :fields="createFields" :initial="createInitial" :submit="createSubmit" submit-label="등록">
+        <ApiForm :key="role" :fields="createFields" :initial="createInitial" :submit="createSubmit" submit-label="등록">
           <template #buttons="{ values }">
             <ActionButton label="아이디 중복 확인" :run="() => accountApi.accountLoginIdCheck(String(values.loginId))" />
           </template>
@@ -312,8 +305,8 @@ onMounted(() => {
         </section>
 
         <template v-if="can('iam:member:edit')">
-          <ResultBox :error="editCodes.call.error.value" />
-          <ApiForm ref="editForm" title="기본 정보 — PUT /api/oit/accounts/{id}" :fields="editBasicFields" :initial="editBasicInitial" :submit="saveBasic" @success="reloadDetail" />
+          <ResultBox :error="codes.error.value" />
+          <ApiForm title="기본 정보 — PUT /api/oit/accounts/{id}" :fields="editBasicFields" :initial="editBasicInitial" :submit="saveBasic" @success="reloadDetail" />
 
           <section class="box">
             <h3>연락처 — PUT …/contacts</h3>

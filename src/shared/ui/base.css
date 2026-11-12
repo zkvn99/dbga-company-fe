@@ -24,6 +24,8 @@ pre.json { background: #f6f6f6; padding: 6px; max-height: 320px; overflow: auto;
 .fields .field { display: grid; grid-template-columns: 240px 1fr; gap: 4px 8px; margin: 4px 0; align-items: start; }
 .fields .field > small { grid-column: 2; }
 .fields .field label code { margin-left: 4px; }
+.fields .tree { display: flex; flex-direction: column; }
+.fields .tree-item { display: block; }
 .inline { margin-right: 10px; }
 .list-item { border: 1px dashed #bbb; padding: 4px; margin: 4px 0; }
 .api-form, .box { border: 1px solid #ddd; padding: 8px 12px; margin: 8px 0; }
