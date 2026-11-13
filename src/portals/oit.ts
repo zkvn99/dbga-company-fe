@@ -96,8 +96,6 @@ export const oit: PortalDef = {
         'GET /api/oit/accounts/login-id-check',
         'GET /api/oit/accounts/{id}',
         'PUT /api/oit/accounts/{id}',
-        'PUT /api/oit/accounts/{id}/contacts',
-        'PUT /api/oit/accounts/{id}/alimtalk',
         'PUT /api/oit/accounts/{id}/role',
         'PUT /api/oit/accounts/{id}/scope',
         'PUT /api/oit/accounts/{id}/delegations',

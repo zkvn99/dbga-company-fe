@@ -4,13 +4,12 @@ import { useRoute } from 'vue-router'
 import { ACCOUNT_ROLES, type AccountRole, CREATE_FEATURE, type RegisterAccountRequest, accountApi } from '@/api/account'
 import {
   type AccountDetail,
+  type AccountDetailPhone,
   type ChangeDelegationsRequest,
   type ChangePermissionSetRequest,
   type ChangeRoleRequest,
   type ChangeScopeRequest,
   type EditAccountRequest,
-  type EditAlimtalkRequest,
-  type EditContactsRequest,
   accountManageApi,
 } from '@/api/accountManage'
 import { type CodeOption, codeApi } from '@/api/code'
@@ -20,11 +19,13 @@ import { ALIMTALK, GENDER, HISTORY_COLUMNS, PHONES, accountInitial, codeOptions,
 import { oit } from '@/portals/oit'
 import ActionButton from '@/shared/ui/ActionButton.vue'
 import ApiForm from '@/shared/ui/ApiForm.vue'
+import DataTable from '@/shared/ui/DataTable.vue'
 import KeyValueTable from '@/shared/ui/KeyValueTable.vue'
 import PagedList from '@/shared/ui/PagedList.vue'
 import ResultBox from '@/shared/ui/ResultBox.vue'
 import { type FieldDef, type Option, opts } from '@/shared/ui/fields'
 import { screenPath } from '@/shared/portal/types'
+import { cols } from '@/shared/ui/table'
 import { useAsync } from '@/shared/ui/useAsync'
 
 /**
@@ -189,29 +190,9 @@ const editBasicInitial = computed(() => {
   }
 })
 
-const primaryPhone = computed(() => d.value?.phones.find((p) => p.primary) ?? null)
-const contactFields: FieldDef[] = [
-  {
-    key: 'phones',
-    label: '추가 번호 (전체 교체)',
-    type: 'list',
-    help: 'phoneId 있으면 수정(번호를 비우면 그대로 · 입력하면 변경) · phoneId 비우면 새 번호 · 행을 지우면 삭제',
-    itemFields: [
-      { key: 'phoneId', label: 'phoneId (기존)', placeholder: '비우면 새 번호' },
-      { key: 'current', label: '현재 번호 (가림)', type: 'readonly' },
-      { key: 'kind', label: '종류', type: 'select', options: opts(['MOBILE', 'LANDLINE']), required: true },
-      { key: 'number', label: '번호 (원문)', type: 'tel', required: true },
-      { key: 'memo', label: '메모' },
-    ],
-  },
-]
-const contactInitial = computed(() =>
-  d.value
-    ? { phones: d.value.phones.filter((p) => !p.primary).map((p) => ({ phoneId: p.phoneId, current: p.number, kind: p.kind, number: '', memo: p.memo })) }
-    : null,
-)
+/** 연락처는 등록 때만 정한다 — 수정은 본인(내 정보 수정 · PUT …/me/contacts). 여기서는 조회만. */
+const phoneColumns = cols<AccountDetailPhone>(['kind:구분', 'number:번호 (가림)', 'memo:메모', 'primary:대표'])
 
-const alimtalkFields: FieldDef[] = [ALIMTALK]
 const roleFields = computed<FieldDef[]>(() => [
   { key: 'role', label: '역할', type: 'select', options: opts(ACCOUNT_ROLES), required: true },
   { key: 'scopeOrgIds', label: '관리 범위', type: 'treecheck', options: orgTreeOpts.value, help: `${SCOPE_ORGS_HELP} · 설계사로 바꾸면 비움` },
@@ -232,8 +213,6 @@ const delegationInitial = computed(() => (d.value ? { features: [...d.value.dele
 
 const id = () => accountId.value!
 const saveBasic = (body: EditAccountRequest) => accountManageApi.edit(id(), body)
-const saveContacts = (body: EditContactsRequest) => accountManageApi.editContacts(id(), body)
-const saveAlimtalk = (body: EditAlimtalkRequest) => accountManageApi.editAlimtalk(id(), body)
 const saveRole = (body: ChangeRoleRequest) => accountManageApi.changeRole(id(), withScope(body))
 const saveScope = (body: ChangeScopeRequest) => accountManageApi.changeScope(id(), withScope(body))
 const saveDelegations = (body: ChangeDelegationsRequest) => accountManageApi.changeDelegations(id(), body)
@@ -308,13 +287,16 @@ onMounted(() => {
           <ResultBox :error="codes.error.value" />
           <ApiForm title="기본 정보 — PUT /api/oit/accounts/{id}" :fields="editBasicFields" :initial="editBasicInitial" :submit="saveBasic" @success="reloadDetail" />
 
-          <section class="box">
-            <h3>연락처 — PUT …/contacts</h3>
-            <p>대표 휴대폰(변경 불가): <b>{{ primaryPhone?.number ?? '-' }}</b> <span class="muted">phoneId {{ primaryPhone?.phoneId ?? '-' }}</span></p>
-            <ApiForm :fields="contactFields" :initial="contactInitial" :submit="saveContacts" @success="reloadDetail" />
+<section class="box">
+            <h3>연락처 (조회만)</h3>
+            <p class="muted">연락처 · 알림톡은 등록 때만 정한다. 이후 수정은 본인 내 정보 수정(PUT …/me/contacts · …/me/alimtalk)에서만 — 관리자 API 없음.</p>
+            <DataTable :rows="d.phones" :columns="phoneColumns" />
           </section>
 
-          <ApiForm title="알림톡 — PUT …/alimtalk" :fields="alimtalkFields" :initial="d" :submit="saveAlimtalk" @success="reloadDetail" />
+          <section class="box">
+            <h3>알림톡 (조회만)</h3>
+            <KeyValueTable :data="d.alimtalk" />
+          </section>
         </template>
 
         <template v-if="can('iam:account:role')">

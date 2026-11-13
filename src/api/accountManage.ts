@@ -115,7 +115,7 @@ export interface EditAccountRequest {
   status: 'ACTIVE' | 'LEAVE' | null
 }
 
-/** 추가 번호 전체 교체 — phoneId 있으면 수정, 없으면 추가, 빠지면 삭제. 대표 항목은 무시. 번호는 원문 필수(가린 값은 400). */
+/** 본인 추가 연락처(PUT …/me/contacts) 전체 교체 — phoneId 있으면 수정, 없으면 추가, 빠지면 삭제. 대표 항목은 무시. 번호는 원문 필수(가린 값은 400). */
 export interface EditContactsRequest {
   phones: { phoneId: string | null; kind: PhoneKind; number: string; memo: string | null; primary?: boolean }[]
 }
@@ -213,8 +213,6 @@ export const accountManageApi = {
 
   // 수정
   edit: (accountId: string, body: EditAccountRequest) => api.put<AccountChanged>(one(accountId), body),
-  editContacts: (accountId: string, body: EditContactsRequest) => api.put<AccountChanged>(`${one(accountId)}/contacts`, body),
-  editAlimtalk: (accountId: string, body: EditAlimtalkRequest) => api.put<AccountChanged>(`${one(accountId)}/alimtalk`, body),
   resetPassword: (accountId: string, body: AccountActionRequest) => api.post<AccountChanged>(`${one(accountId)}/password-reset`, body),
   changeRole: (accountId: string, body: ChangeRoleRequest) => api.put<AccountChanged>(`${one(accountId)}/role`, body),
   changeScope: (accountId: string, body: ChangeScopeRequest) => api.put<AccountChanged>(`${one(accountId)}/scope`, body),
