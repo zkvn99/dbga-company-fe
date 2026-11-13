@@ -3,7 +3,7 @@ import { oitAuthApi } from '@/api/auth'
 import { setupApi } from '@/api/setup'
 import { type PortalDef, pending } from '@/shared/portal/types'
 
-/** 회사 전산관리자(OIT, 역할 ORG_SYSTEM_ADMIN — 화면설계서의 "조직 전산관리자") — 화면설계서 v2.5 p.110~125. 내 정보 = 공통 페이지(p.10, OIT-ME). OIT-20 역할 추가(p.118)는 만들지 않아 등록하지 않음(ADR-0035 — 역할 3개 고정, 팀장 등은 권한 세트). */
+/** 회사 전산관리자(OIT, 역할 ORG_SYSTEM_ADMIN — 화면설계서의 "조직 전산관리자") — 화면설계서 v2.5 p.110~125. 내 정보 = 공통 페이지(p.10, OIT-ME · 수정 OIT-X-ME-EDIT). OIT-20 역할 추가(p.118)는 만들지 않아 등록하지 않음(ADR-0035 — 역할 3개 고정, 팀장 등은 권한 세트). */
 export const oit: PortalDef = {
   key: 'oit',
   name: '회사 전산관리자 (OIT)',
@@ -43,7 +43,31 @@ export const oit: PortalDef = {
       specPage: 113,
       note: '구축형 — 비밀번호 변경만. 설계서의 조직 등록 · 기본 설정 · 메뉴 잠금 단계는 하지 않음(센터 등록 · 회사 생성은 로그인 전 설치 셋업 OIT-18)',
     },
-    { id: 'OIT-ME', title: '내 정보', setup: true, page: () => import('@/shared/pages/MePage.vue'), apis: ['GET /api/oit/me'], specPage: 10 },
+    {
+      id: 'OIT-ME',
+      title: '내 정보',
+      page: () => import('@/pages/oit/OitXMyInfo.vue'),
+      apis: ['GET /api/oit/me/profile', 'GET /api/oit/codes/options', 'GET /api/oit/me'],
+      specPage: 10,
+      note: 'ORG-29와 같은 화면(관리 조직 · 권한 조회만). 셋업(임시 비밀번호) 계정은 profile 403 이라 setup 화면 아님 — 가드가 셋업 화면으로 보냄(OIT-15)',
+    },
+    {
+      id: 'OIT-X-ME-EDIT',
+      title: '내 정보 수정',
+      page: () => import('@/pages/oit/OitXMyInfoEdit.vue'),
+      apis: [
+        'GET /api/oit/me/profile',
+        'PUT /api/oit/me',
+        'PUT /api/oit/me/contacts',
+        'PUT /api/oit/me/alimtalk',
+        'POST /api/oit/me/phone/otp',
+        'PUT /api/oit/me/phone',
+        'GET /api/oit/codes/options',
+        'GET /api/oit/me',
+      ],
+      specPage: 10,
+      note: '공통 내 정보(p.10)의 수정 — 설계서에 OIT 별도 ID 없음(FP-21 · ORG-30과 같은 화면). 역할 · 범위 · 권한은 OIT-03. 비밀번호는 OIT-15',
+    },
     {
       id: 'OIT-02',
       title: '계정 관리 — 계정 목록 (회원 처리 ORG-26 B안 · 이력 ORG-34 포함)',
