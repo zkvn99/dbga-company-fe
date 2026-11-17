@@ -1,7 +1,7 @@
 import { accountApi } from '@/api/account'
 import { oitAuthApi } from '@/api/auth'
 import { setupApi } from '@/api/setup'
-import { type PortalDef, pending } from '@/shared/portal/types'
+import type { PortalDef } from '@/shared/portal/types'
 
 /** 회사 전산관리자(OIT, 역할 ORG_SYSTEM_ADMIN — 화면설계서의 "조직 전산관리자") — 화면설계서 v2.5 p.110~125. 내 정보 = 공통 페이지(p.10, OIT-ME · 수정 OIT-X-ME-EDIT). OIT-20 역할 추가(p.118)는 만들지 않아 등록하지 않음(ADR-0035 — 역할 3개 고정, 팀장 등은 권한 세트). */
 export const oit: PortalDef = {
@@ -182,7 +182,41 @@ export const oit: PortalDef = {
       specPage: 123,
       note: '회사 정보(주소 · 대표 연락처 수정) · 조직도(ORG-27과 같은 규칙) · 소속 조직원(아래 포함). 조직 관리자 · 관리 범위 목록은 OIT-03(범위) · OIT-10(세트)에서 — OIT-13에 따로 두지 않음. 통계 전송 · 구매 허용 설정은 그 기능 때',
     },
-    pending('OIT-16', '공급업체 계약', 124),
-    pending('OIT-17', '계약 신청 · 동의 (모달)', 125),
+    {
+      id: 'OIT-16',
+      title: '공급업체 계약 (동의 · 거절 · 취소는 목록에서)',
+      page: () => import('@/pages/oit/Oit16ContractList.vue'),
+      apis: [
+        'GET /api/oit/contracts',
+        'GET /api/oit/contracts/awaiting-count',
+        'GET /api/oit/contracts/{contractId}',
+        'GET /api/oit/contracts/{contractId}/history',
+        'POST /api/oit/contracts/{contractId}/cancel',
+        'POST /api/oit/contracts/{contractId}/accept',
+        'POST /api/oit/contracts/{contractId}/reject',
+        'POST /api/oit/contracts/{contractId}/terminate/cancel',
+        'POST /api/oit/contracts/{contractId}/terminate/accept',
+        'POST /api/oit/contracts/{contractId}/terminate/reject',
+      ],
+      specPage: 124,
+      note: 'ADR-0043. 조회는 이 설치본 사본, 처리는 센터(설치본 서명 API) → 응답으로 사본 갱신. 센터가 꺼져 있으면 503 HUB_CENTER_UNAVAILABLE',
+    },
+    {
+      id: 'OIT-17',
+      title: '계약 신청 · 해지 (모달)',
+      params: ':contractId?',
+      page: () => import('@/pages/oit/Oit17ContractForm.vue'),
+      apis: [
+        'GET /api/oit/contracts/partners',
+        'POST /api/oit/contracts',
+        'GET /api/oit/contracts/{contractId}',
+        'POST /api/oit/contracts/{contractId}/terminate',
+        'POST /api/oit/contracts/{contractId}/terminate/accept',
+        'POST /api/oit/contracts/{contractId}/terminate/reject',
+        'POST /api/oit/contracts/{contractId}/terminate/cancel',
+      ],
+      specPage: 125,
+      note: 'contractId 없으면 신청, 있으면 해지 신청 · 동의 · 거절',
+    },
   ],
 }
